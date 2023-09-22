@@ -1,0 +1,12 @@
+build/
+/data/
+.egg-info/
+pip-wheel-metadata/
+*.pyc
+
+*.so
+.vscode/
+.eggs/
+dist/
+htmlcov/
+.coverage
