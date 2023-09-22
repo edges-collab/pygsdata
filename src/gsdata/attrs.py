@@ -116,8 +116,6 @@ def npfield(
     if possible_ndims is not None:
         validator.append(ndim_validator(possible_ndims))
 
-    # validator.append(type_validator)
-
     if shape is not None:
         validator.append(shape_validator(shape))
 

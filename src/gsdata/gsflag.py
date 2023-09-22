@@ -129,14 +129,14 @@ class GSFlag:
 
     @classmethod
     def read_gsflag(cls, filename: str) -> Self:
-        """Reads a GSFlag file and stores the data in the GSFlag object."""
+        """Read a GSFlag file to create the object."""
         obj = hickle.load(filename)
         return obj.update(
             history=Stamp("Read GSFlag file", parameters={"filename": filename})
         )
 
     def write_gsflag(self, filename: str) -> Self:
-        """Writes the data in the GSData object to a GSH5 file."""
+        """Write the data in the GSData object to a GSH5 file."""
         new = self.update(
             history=Stamp("Wrote GSFlag file", parameters={"filename": filename})
         )
@@ -144,7 +144,7 @@ class GSFlag:
         return new.update(filename=filename)
 
     def update(self, **kwargs) -> Self:
-        """Returns a new GSFlag object with updated attributes."""
+        """Return a new GSFlag object with updated attributes."""
         # If the user passes a single dictionary as history, append it.
         # Otherwise raise an error, unless it's not passed at all.
         history = kwargs.pop("history", None)
@@ -165,7 +165,7 @@ class GSFlag:
 
     @property
     def full_rank_flags(self) -> np.ndarray:
-        """Returns a full-rank flag array."""
+        """Return a full-rank flag array."""
         flg = self.flags.copy()
 
         if "load" not in self.axes:
@@ -224,7 +224,7 @@ class GSFlag:
             )
 
     def __or__(self, other: GSFlag) -> Self:
-        """Takes the product of two GSFlag objects and returns a new one."""
+        """Take the product of two GSFlag objects and return a new one."""
         if not isinstance(other, GSFlag):
             raise TypeError("can only 'or' GSFlag objects")
 
@@ -244,7 +244,7 @@ class GSFlag:
         )
 
     def __and__(self, other: GSFlag) -> Self:
-        """Takes the product of two GSFlag objects and returns a new one."""
+        """Take the product of two GSFlag objects and return a new one."""
         if not isinstance(other, GSFlag):
             raise TypeError("can only 'and' GSFlag objects")
 
@@ -264,7 +264,7 @@ class GSFlag:
         )
 
     def select(self, idx: np.ndarray | slice, axis: str, squeeze: bool = False) -> Self:
-        """Selects a subset of the data along the given axis."""
+        """Select a subset of the data along the given axis."""
         if axis not in ("load", "pol", "time", "freq"):
             raise ValueError(f"Axis {axis} not recognized")
 
@@ -301,7 +301,7 @@ class GSFlag:
         )
 
     def op_on_axis(self, op, axis: str) -> Self:
-        """Applies an operation along the given axis."""
+        """Apply an operation along the given axis."""
         if axis not in ("load", "pol", "time", "freq"):
             raise ValueError(f"Axis {axis} not recognized")
 
@@ -326,9 +326,6 @@ class GSFlag:
             filename=None,
         )
 
-    def any(self, axis: str | None = None) -> bool | Self:
-        """Returns True if any of the flags are True."""
-        if axis is None:
-            return self.flags.any()
-        else:
-            return self.op_on_axis(np.any, axis)
+    def any(self, axis: str | None = None) -> bool | Self:  # noqa: A003
+        """Return True if any of the flags are True."""
+        return self.flags.any() if axis is None else self.op_on_axis(np.any, axis)

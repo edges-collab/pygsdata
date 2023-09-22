@@ -29,7 +29,7 @@ def select_freqs(
     indx: np.ndarray | None = None,
     **kwargs,
 ) -> GSData:
-    """Selects a subset of the frequency channels."""
+    """Select a subset of the frequency channels."""
     if "range" in kwargs:
         warnings.warn("The 'range' keyword is deprecated, use 'freq_range' instead.")
         freq_range = kwargs.pop("range")
@@ -88,7 +88,7 @@ def select_times(
     load: int | str = "ant",
     **kwargs,
 ) -> GSData:
-    """Selects a subset of the times."""
+    """Select a subset of the times."""
     if data.in_lst:
         raise ValueError("LST-binned data cannot be selected on times.")
 
@@ -135,7 +135,7 @@ def select_lsts(
     use_alan_coordinates: bool = False,
     **kwargs,
 ) -> GSData:
-    """Selects a subset of the times."""
+    """Select a subset of the times."""
     if "range" in kwargs:
         warnings.warn("The 'range' keyword is deprecated, use 'lst_range' instead.")
         lst_range = kwargs.pop("range")
@@ -217,6 +217,6 @@ def select_lsts(
 
 @gsregister("reduce")
 def prune_flagged_integrations(data: GSData, **kwargs) -> GSData:
-    """Removes integrations that are flagged for all freq-pol-loads."""
+    """Remove integrations that are flagged for all freq-pol-loads."""
     flg = np.all(data.complete_flags, axis=(0, 1, 3))
     return _mask_times(data, ~flg)

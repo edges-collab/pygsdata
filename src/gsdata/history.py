@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import astropy
 import datetime
-import edges_cal
 import edges_io
 import numpy as np
 import read_acq
@@ -11,6 +10,8 @@ import yaml
 from attrs import asdict, define, evolve, field
 from attrs import validators as vld
 from hickleable import hickleable
+
+import edges_cal
 
 from .. import __version__
 
@@ -177,7 +178,7 @@ class History:
         return evolve(self, stamps=self.stamps + (stamp,))
 
     def __len__(self):
-        """Returns the number of stamps."""
+        """Return the number of stamps."""
         return len(self.stamps)
 
     def __iter__(self):
