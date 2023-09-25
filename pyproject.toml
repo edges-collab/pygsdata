@@ -29,6 +29,11 @@ dependencies = [
     "numpy",
     "scipy",
     "astropy",
+    "attrs",
+    "matplotlib",
+    "hickle",
+    "read_acq",
+    "h5py",
 ]
 dynamic = ["version"]
 
