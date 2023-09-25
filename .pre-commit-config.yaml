@@ -1,4 +1,4 @@
-exclude: '^docs/conf.py|^tests/data/'
+exclude: '^docs/conf.py|^tests/data/|^docs/workflow.yaml'
 
 ci:
   autoupdate_schedule: monthly
@@ -32,7 +32,6 @@ repos:
       - flake8-pytest
       - flake8-docstrings
       - flake8-rst-docstrings
-      - flake8-rst
       - flake8-copyright
 
 - repo: https://github.com/PyCQA/isort
@@ -59,11 +58,6 @@ repos:
     hooks:
     -   id: pyupgrade
         args: [--py38-plus]
-
-- repo: https://github.com/asottile/setup-cfg-fmt
-  rev: v2.4.0
-  hooks:
-  -   id: setup-cfg-fmt
 
 - repo: https://github.com/commitizen-tools/commitizen
   rev: 3.6.0

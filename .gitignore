@@ -10,3 +10,5 @@ pip-wheel-metadata/
 dist/
 htmlcov/
 .coverage
+*/*.egg-info/
+docs/_build/

@@ -1,0 +1,125 @@
+globals:
+  calobs: alanlike_calfile.h5
+  band: low
+  s11_path: /data5/edges/data/S11_antenna/low_band/20160830_a/s11
+
+
+steps:
+  - function: convert
+    params:
+      telescope_name: "EDGES-low2"
+  - function: select_freqs
+    params:
+      range: [50, 100]
+  - function: add_weather_data
+  - function: add_thermlog_data
+    params:
+      band: low
+    write: "{prev_stem}.gsh5"
+  - function: aux_filter
+    params:
+      maxima:
+        adcmax: 0.4
+        ambient_hum: 100
+
+  - function: rfi_model_filter
+    name: first-rfi-model
+    params:
+      decrement_threshold: 1
+      increase_order: true
+      init_flags:
+        - 90.0
+        - 100.0
+      max_iter: 40
+      max_terms: 40
+      min_terms: 8
+      min_threshold: 3.5
+      model: !Model
+        model: polynomial
+        n_terms: 5
+        offset: -2.5
+        parameters: null
+      n_resid: -1
+      threshold: 6.5
+      watershed: 4
+  - function: rfi_watershed_filter
+    name: first-rfi-watershed
+    params:
+      tol: 0.7
+  - function: negative_power_filter
+#  - function: total_power_filter
+#    params:
+#      bands:
+#        - [50, 100]
+#	- [50, 75]
+#	- [75, 100]
+#      metric_model: !Model
+#        model: fourier
+#	n_terms: 40
+#	period: 48.0
+#      std_model: !Model
+#        model: fourier
+#	n_terms: 10
+#	period: 48.0
+#      threshold: 3
+  - function: sun_filter
+    params:
+      elevation_range: [-90.0, -10.0]
+  - function: moon_filter
+    params:
+      elevation_range: [-90.0, 90.0]
+
+  # CALIBRATION BLOCK
+  - function: dicke_calibration
+  - function: freq_bin_with_models
+    params:
+      resolution: 8
+      model: !Model
+        model: polynomial
+        n_terms: 10
+  - function: apply_noise_wave_calibration
+    params:
+      calobs: "{{ globals.calobs }}"
+      band: "{{ globals.band }}"
+      s11_path: "{{ globals.s11_path }}"
+  - function: apply_loss_correction
+    params:
+      band: low
+      antenna_correction: false
+      balun_correction: true
+      ground_correction: ':'
+      calobs: "{{ globals.calobs }}"
+      band: "{{ globals.band }}"
+      s11_path: "{{ globals.s11_path }}"
+  - function: apply_beam_correction
+    params:
+      band: low
+      beam_file: /data4/nmahesh/edges/edges-field-levels/beam_factors/low_band_beam_factor_fromnive_azrotm6.h5
+    write: cal/{prev_stem}.gsh5
+
+
+  - function: add_model
+    name: linlog
+    params:
+      model: !Model
+        model: linlog
+        beta: -2.5
+        f_center: 75.0
+        n_terms: 5
+        with_cmb: false
+  - function: lst_bin
+    name: lst-bin-15min
+    params:
+      binsize: 0.25
+    write: cal/{prev_stem}.L15min.gsh5
+  - function: lst_average
+    write: cal/lst-avg/lst_average.gsh5
+  - function: lst_bin
+    name: lst-bin-24hr
+    params:
+      binsize: 24.0
+    write: cal/lst-avg/lstbin24hr.gsh5
+  - function: freq_bin
+    params:
+      resolution: 8
+    write: cal/lst-avg/{prev_stem}.400kHz.gsh5

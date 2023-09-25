@@ -9,7 +9,6 @@ from astropy.coordinates import Longitude
 from astropy.time import Time
 from typing import Tuple, Union
 
-from .. import _coordinates_alan as crda
 from .gsdata import GSData
 from .register import gsregister
 
@@ -136,10 +135,6 @@ def select_lsts(
     **kwargs,
 ) -> GSData:
     """Select a subset of the times."""
-    if "range" in kwargs:
-        warnings.warn("The 'range' keyword is deprecated, use 'lst_range' instead.")
-        lst_range = kwargs.pop("range")
-
     if kwargs:
         raise ValueError(f"Unknown keyword arguments: {kwargs}")
 
@@ -159,34 +154,7 @@ def select_lsts(
                 lst_range[1] % 24 * un.hourangle,
             )
 
-        if use_alan_coordinates:
-            secs = np.array(
-                [
-                    crda.datetime_tosecs(dt)
-                    for dt in data.time_array[:, load].to_datetime().flatten()
-                ]
-            ).reshape(data.time_array[:, load].shape)
-            gst = crda.gst(secs)
-            if gha:
-                t = (
-                    (
-                        gst
-                        - (17.0 + 45.67 / 60.0) * np.pi / 12.0
-                        + data.telescope_location.lon.rad
-                    )
-                    * 12.0
-                    / np.pi
-                    * un.hourangle
-                )
-            else:
-                t = (
-                    (gst + data.telescope_location.lon.rad)
-                    * 12.0
-                    / np.pi
-                    * un.hourangle
-                )
-        else:
-            t = data.gha[:, load] if gha else data.lst_array[:, load]
+        t = data.gha[:, load] if gha else data.lst_array[:, load]
 
         # In case we have negative LST/GHA
         t = t % (24 * un.hourangle)

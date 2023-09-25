@@ -3,3 +3,56 @@ requires = ["setuptools>=45", "wheel", "setuptools_scm[toml]>=6.0", "numpy"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools_scm]
+
+
+[project]
+name = "gsdata"
+description = "A Python interface for 21cm Global Signal Data."
+readme = "README.md"
+authors = [
+    {name="Steven Murray", email="steven.murray@sns.it"}
+]
+license = {text="MIT"}
+requires-python = ">=3.8"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX",
+    "Operating System :: Unix",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: Implementation :: CPython",
+]
+dependencies = [
+    "numpy",
+    "scipy",
+    "astropy",
+]
+dynamic = ["version"]
+
+[project.optional-dependencies]
+docs = [
+    "sphinx",
+    "furo",
+    "myst-parser"
+]
+tests = [
+    "pytest",
+    "pytest-cov"
+]
+dev = [
+    "pre-commit",
+    "gsdata[docs,tests]"
+]
+
+
+[tool.pytest.ini_options]
+addopts = "--verbose --durations=25"
+norecursedirs = [
+    "dist",
+    "build",
+    ".tox",
+]
+testpaths = "tests"

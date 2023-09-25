@@ -23,7 +23,7 @@ from pathlib import Path
 from read_acq.read_acq import ACQError
 from typing import Iterable, Literal
 
-from .. import coordinates as crd
+from . import coordinates as crd
 from .attrs import npfield, timefield
 from .constants import KNOWN_LOCATIONS
 from .gsflag import GSFlag

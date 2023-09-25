@@ -13,7 +13,7 @@ from hickleable import hickleable
 
 import edges_cal
 
-from .. import __version__
+from . import __version__
 
 
 @hickleable()
