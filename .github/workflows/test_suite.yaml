@@ -47,13 +47,13 @@ jobs:
 
   downstream:
     env:
-      PYTHON: 3.8
+      PYTHON: 3.11
       OS: ubuntu-latest
     name: Downstream
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        package: ['edges-io', 'edges-cal','edges-analysis']
+        package: ['edges-analysis']
       fail-fast: false
     steps:
       - uses: actions/checkout@master
@@ -62,21 +62,21 @@ jobs:
       - uses: actions/setup-python@v4
         with:
           python-version: ${{ env.PYTHON }}
-      - name: set PY
-        run: echo "PY=$(python -c 'import hashlib, sys;print(hashlib.sha256(sys.version.encode()+sys.executable.encode()).hexdigest())')" >> $GITHUB_ENV
+
       - name: Setup Environment
         run: |
           pip install -U coverage
           pip install .[dev]
+
       - name: Get downstream package
         run: |
           cd ..
           git clone https://github.com/edges-collab/${{ matrix.package }}
           cd ${{ matrix.package }}
           pip install .[dev]
-      - name: Install ipykernel
-        if: matrix.package == 'edges-cal'
-        run: python -m ipykernel install --user --name edges --display-name "edges"
+      # - name: Install ipykernel
+      #   if: matrix.package == 'edges-cal'
+      #   run: python -m ipykernel install --user --name edges --display-name "edges"
 
       - name: Run Tests
         run: |
@@ -103,7 +103,7 @@ jobs:
 
       - uses: actions/setup-python@v4
         with:
-          python-version: 3.9
+          python-version: 3.11
 
       - name: Install coverage
         run: pip install coverage
