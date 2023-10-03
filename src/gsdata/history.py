@@ -1,19 +1,15 @@
 """Classes for defining the history of a GSData / GSFlag object."""
+
 from __future__ import annotations
 
-import astropy
+from pkg_resources import get_distribution
+
+import contextlib
 import datetime
-import edges_io
-import numpy as np
-import read_acq
 import yaml
 from attrs import asdict, define, evolve, field
 from attrs import validators as vld
 from hickleable import hickleable
-
-import edges_cal
-
-from . import __version__
 
 
 @hickleable()
@@ -53,14 +49,19 @@ class Stamp:
 
     @versions.default
     def _versions_default(self):
-        return {
-            "edges-analysis": __version__,
-            "edges-cal": edges_cal.__version__,
-            "read_acq": read_acq.__version__,
-            "edges-io": edges_io.__version__,
-            "numpy": np.__version__,
-            "astropy": astropy.__version__,
-        }
+        out = {}
+        for pkg in (
+            "edges-cal",
+            "edges-io",
+            "edges-analysis",
+            "read_acq",
+            "numpy",
+            "astropy",
+            "gsdata",
+        ):
+            with contextlib.suppress(Exception):
+                out[pkg] = get_distribution(__name__).version
+        return out
 
     def _to_yaml_dict(self):
         dct = asdict(self)
