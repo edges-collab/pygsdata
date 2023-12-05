@@ -40,7 +40,7 @@ repos:
   - id: isort
 
 - repo: https://github.com/psf/black
-  rev: 23.10.1
+  rev: 23.11.0
   hooks:
   - id: black
 - repo: https://github.com/pre-commit/pygrep-hooks
@@ -60,7 +60,7 @@ repos:
         args: [--py38-plus]
 
 - repo: https://github.com/commitizen-tools/commitizen
-  rev: 3.12.0
+  rev: v3.13.0
   hooks:
     - id: commitizen
       stages: [commit-msg]
