@@ -20,7 +20,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
-        python-version: [3.8, 3.9, "3.10", "3.11"]
+        python-version: [3.9, "3.10", "3.11", "3.12"]
     steps:
       - uses: actions/checkout@master
         with:
@@ -41,7 +41,7 @@ jobs:
       - name: Upload coverage data
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-data
+          name: coverage-data-tests-${{ matrix.python-version }}-${{ matrix.os }}
           path: ".coverage.*"
           if-no-files-found: error
 
@@ -85,7 +85,7 @@ jobs:
       - name: Upload coverage data
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-data
+          name: coverage-data-downstream-${{ matrix.package }}
           path: ".coverage.*"
           if-no-files-found: error
 
@@ -99,7 +99,8 @@ jobs:
       - name: Download coverage data.
         uses: actions/download-artifact@v4
         with:
-          name: coverage-data
+          pattern: coverage-data-*
+          merge-multiple: true
 
       - uses: actions/setup-python@v5
         with:
