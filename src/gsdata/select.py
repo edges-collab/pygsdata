@@ -15,9 +15,9 @@ from .register import gsregister
 logger = logging.getLogger(__name__)
 
 FreqType = un.Quantity[un.MHz]
-FreqRangeType = Tuple[FreqType, FreqType]
+FreqRangeType = tuple[FreqType, FreqType]
 LSTType = Union[un.Quantity[un.hourangle], Longitude]
-LSTRangeType = Tuple[LSTType, LSTType]
+LSTRangeType = tuple[LSTType, LSTType]
 
 
 @gsregister("reduce")
