@@ -7,7 +7,7 @@ import warnings
 from astropy import units as un
 from astropy.coordinates import Longitude
 from astropy.time import Time
-from typing import Tuple, Union
+from typing import Union
 
 from .gsdata import GSData
 from .register import gsregister
