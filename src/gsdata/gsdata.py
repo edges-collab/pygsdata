@@ -18,11 +18,11 @@ from astropy.time import Time
 from attrs import converters as cnv
 from attrs import define, evolve, field
 from attrs import validators as vld
+from collections.abc import Iterable
 from functools import cached_property
 from pathlib import Path
 from read_acq.read_acq import ACQError
 from typing import Literal
-from collections.abc import Iterable
 
 from . import coordinates as crd
 from .attrs import npfield, timefield
