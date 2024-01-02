@@ -7,7 +7,7 @@ import warnings
 from astropy import units as un
 from astropy.coordinates import Longitude
 from astropy.time import Time
-from typing import Tuple, Union
+from typing import Union
 
 from .gsdata import GSData
 from .register import gsregister
@@ -15,9 +15,9 @@ from .register import gsregister
 logger = logging.getLogger(__name__)
 
 FreqType = un.Quantity[un.MHz]
-FreqRangeType = Tuple[FreqType, FreqType]
+FreqRangeType = tuple[FreqType, FreqType]
 LSTType = Union[un.Quantity[un.hourangle], Longitude]
-LSTRangeType = Tuple[LSTType, LSTType]
+LSTRangeType = tuple[LSTType, LSTType]
 
 
 @gsregister("reduce")
