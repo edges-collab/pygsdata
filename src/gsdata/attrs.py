@@ -1,4 +1,5 @@
 """Utilities for attrs used in GSData."""
+
 from __future__ import annotations
 
 import attrs

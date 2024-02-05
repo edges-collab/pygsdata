@@ -5,6 +5,7 @@ The GSData object simplifies handling of radio astronomy data taken from a singl
 antenna, adding self-consistent metadata along with the data itself, and providing
 key methods for data selection, I/O, and analysis.
 """
+
 from __future__ import annotations
 
 import astropy.units as un
@@ -89,9 +90,9 @@ class GSData:
     time_array: Time | Longitude = timefield(possible_ndims=(2,))
     telescope_location: EarthLocation = field(
         validator=vld.instance_of(EarthLocation),
-        converter=lambda x: EarthLocation(*x)
-        if not isinstance(x, EarthLocation)
-        else x,
+        converter=lambda x: (
+            EarthLocation(*x) if not isinstance(x, EarthLocation) else x
+        ),
     )
 
     loads: tuple[str] = field(converter=tuple)
@@ -108,9 +109,9 @@ class GSData:
         default=None, possible_ndims=(4,), dtype=float
     )
 
-    data_unit: Literal[
-        "power", "temperature", "uncalibrated", "uncalibrated_temp"
-    ] = field(default="power")
+    data_unit: Literal["power", "temperature", "uncalibrated", "uncalibrated_temp"] = (
+        field(default="power")
+    )
     auxiliary_measurements: dict = field(factory=dict)
     time_ranges: Time | Longitude = timefield(shape=(None, None, 2))
     filename: Path | None = field(default=None, converter=cnv.optional(Path))
@@ -445,9 +446,9 @@ class GSData:
 
             fl.attrs["loads"] = "|".join(self.loads)
             fl["nsamples"] = self.nsamples
-            fl.attrs[
-                "effective_integration_time"
-            ] = self.effective_integration_time.to_value("s")
+            fl.attrs["effective_integration_time"] = (
+                self.effective_integration_time.to_value("s")
+            )
 
             flg_grp = fl.create_group("flags")
             if self.flags:
