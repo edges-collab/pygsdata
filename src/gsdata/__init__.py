@@ -1,4 +1,5 @@
 """An interface for 21cm Global Signal Data."""
+
 from pkg_resources import DistributionNotFound, get_distribution
 
 try:

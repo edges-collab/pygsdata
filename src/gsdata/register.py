@@ -1,4 +1,5 @@
 """Register functions as processors for GSData objects."""
+
 from __future__ import annotations
 
 import attrs

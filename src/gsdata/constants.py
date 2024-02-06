@@ -1,4 +1,5 @@
 """Useful constants."""
+
 from astropy import coordinates as apc
 from astropy import units as apu
 

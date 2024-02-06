@@ -1,4 +1,5 @@
 """An object to hold flag information."""
+
 from __future__ import annotations
 
 import hickle

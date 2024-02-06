@@ -1,4 +1,5 @@
 """Selection functions for GSData objects."""
+
 from __future__ import annotations
 
 import logging
