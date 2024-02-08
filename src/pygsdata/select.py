@@ -10,7 +10,7 @@ from astropy.coordinates import Longitude
 from astropy.time import Time
 from typing import Union
 
-from .pygsdata import GSData
+from .gsdata import GSData
 from .register import gsregister
 
 logger = logging.getLogger(__name__)

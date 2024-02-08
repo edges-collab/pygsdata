@@ -7,8 +7,8 @@ import datetime
 import functools
 from typing import Callable, Literal
 
+from .gsdata import GSData
 from .gsflag import GSFlag
-from .pygsdata import GSData
 
 
 class _Register:
