@@ -297,7 +297,8 @@ class GSData:
     def resids(self) -> np.ndarray | None:
         """The residuals of the data."""
         warnings.warn(
-            DeprecationWarning("Use the 'residuals' attribute instead of 'resids'")
+            DeprecationWarning("Use the 'residuals' attribute instead of 'resids'"),
+            stacklevel=2,
         )
         return self.residuals
 
@@ -332,11 +333,11 @@ class GSData:
             except UnknownSiteException:
                 try:
                     telescope_location = KNOWN_LOCATIONS[telescope_location]
-                except KeyError:
+                except KeyError as e:
                     raise ValueError(
                         "telescope_location must be an EarthLocation or a known site, "
                         f"got {telescope_location}"
-                    )
+                    ) from e
 
         year, day, hour, minute = times[0, 0].to_value("yday", "date_hm").split(":")
         name = name.format(

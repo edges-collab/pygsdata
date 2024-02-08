@@ -32,7 +32,9 @@ def select_freqs(
 ) -> GSData:
     """Select a subset of the frequency channels."""
     if "range" in kwargs:
-        warnings.warn("The 'range' keyword is deprecated, use 'freq_range' instead.")
+        warnings.warn(
+            "The 'range' keyword is deprecated, use 'freq_range' instead.", stacklevel=2
+        )
         freq_range = kwargs.pop("range")
 
     if kwargs:
@@ -94,7 +96,9 @@ def select_times(
         raise ValueError("LST-binned data cannot be selected on times.")
 
     if "range" in kwargs:
-        warnings.warn("The 'range' keyword is deprecated, use 'time_range' instead.")
+        warnings.warn(
+            "The 'range' keyword is deprecated, use 'time_range' instead.", stacklevel=2
+        )
         time_range = kwargs.pop("range")
 
     if kwargs:
