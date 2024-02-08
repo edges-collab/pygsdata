@@ -21,7 +21,7 @@ class _Register:
     def __call__(
         self, data: GSData, *args, message: str = "", **kw
     ) -> GSData | list[GSData]:
-        now = datetime.datetime.now()
+        now = datetime.datetime.now(tz=datetime.timezone.utc)
         newdata = self.func(data, *args, **kw)
 
         history = {

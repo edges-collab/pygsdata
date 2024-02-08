@@ -35,6 +35,7 @@ dependencies = [
     "read_acq",
     "h5py",
     "typing_extensions",
+    "pytz",
 ]
 dynamic = ["version"]
 
@@ -68,11 +69,20 @@ extend-select = [
   "N",    # pep8-naming
   "D",    # docstyle
   # "ANN"   # type annotations
-  "B"     # bugbear
+  "B",    # bugbear
+  "A",    # builtins
+  "C4",   # comprehensions
+  "DTZ"   # datetime
 ]
-
+ignore = [
+    "DTZ007",   # use %z in strptime
+]
 [tool.ruff.lint.per-file-ignores]
-"tests/*.py" = ["D103"]  # ignore missing docstring in tests
+"tests/*.py" = [
+    "D103",  # ignore missing docstring in tests
+    "DTZ"    # ignore datetime in tests
+]
+"docs/conf.py" = ["A"]   # conf.py can shadow builtins
 
 [tool.ruff.lint.pydocstyle]
 convention = 'numpy'

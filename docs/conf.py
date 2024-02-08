@@ -77,7 +77,7 @@ master_doc = "index"
 
 # General information about the project.
 project = "pygsdata"
-copyright = f"{datetime.datetime.now().year}, EDGES Team"
+copyright = f"{datetime.datetime.now().year}, EDGES Team"  # noqa
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
