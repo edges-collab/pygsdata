@@ -74,6 +74,24 @@ def unit_validator(unit):
     return validator
 
 
+def _cmp_bool_array(x, y):
+    if x is None and y is None:
+        return True
+    elif x is None or y is None:
+        return False
+    else:
+        return np.array_equal(x, y)
+
+
+def _cmp_num_array(x, y):
+    if x is None and y is None:
+        return True
+    elif x is None or y is None:
+        return False
+    else:
+        return x.shape == y.shape and np.allclose(x, y)
+
+
 def npfield(
     dtype=None,
     possible_ndims: tuple[int] | None = None,
@@ -88,26 +106,6 @@ def npfield(
         required = False
     elif required is None:
         required = True
-
-    if dtype is bool:
-
-        def cmp(x, y):
-            if x is None and y is None:
-                return True
-            elif x is None or y is None:
-                return False
-            else:
-                return np.array_equal(x, y)
-
-    else:
-
-        def cmp(x, y):
-            if x is None and y is None:
-                return True
-            elif x is None or y is None:
-                return False
-            else:
-                return x.shape == y.shape and np.allclose(x, y)
 
     if validator is None:
         validator = []
@@ -130,7 +128,7 @@ def npfield(
             kwargs["validator"] = attrs.validators.optional(validator)
 
     return field(
-        eq=cmp_using(cmp),
+        eq=cmp_using(_cmp_bool_array if dtype == bool else _cmp_num_array),
         converter=array_converter(dtype=dtype, allow_none=not required),
         **kwargs,
     )

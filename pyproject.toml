@@ -60,13 +60,17 @@ target-version = "py39"
 
 [tool.ruff.lint]
 extend-select = [
-  "UP",  # pyupgrade
-  "E",   # pycodestyle
+  "UP",   # pyupgrade
+  "E",    # pycodestyle
+  "W",    # pycodestyle warning
+  "C90",  # mccabe complexity
 ]
 
 [tool.ruff.lint.pydocstyle]
 convention = 'numpy'
 
+[tool.ruff.lint.mccabe]
+max-complexity = 15
 
 [tool.pytest.ini_options]
 addopts = "--verbose --durations=25"
