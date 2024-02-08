@@ -57,6 +57,8 @@ RegKind = Literal["gather", "calibrate", "filter", "reduce", "supplement"]
 
 @attrs.define()
 class gsregister:  # noqa: N801
+    """Decorator to register a function as a processor for GSData objects."""
+
     kind: RegKind = attrs.field(
         validator=attrs.validators.in_(
             ["gather", "calibrate", "filter", "reduce", "supplement"]

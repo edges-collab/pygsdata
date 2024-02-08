@@ -31,6 +31,35 @@ def create_mock_edges_data(
     add_noise: bool = False,
     as_power: bool = False,
 ):
+    """
+    Create mock EDGES data.
+
+    Parameters
+    ----------
+    flow : un.Quantity[un.MHz], optional
+        The lower frequency edge of the frequency range (default: 50 MHz).
+    fhigh : un.Quantity[un.MHz], optional
+        The upper frequency edge of the frequency range (default: 100 MHz).
+    ntime : int, optional
+        The number of time samples (default: 100).
+    time0 : float, optional
+        The starting time in Julian Date (default: 2459900.27).
+    dt : un.Quantity[un.s], optional
+        The time step between samples in seconds (default: 40.0 s).
+    add_noise : bool, optional
+        Whether to add random noise to the data (default: False).
+    as_power : bool, optional
+        Whether to return the data as power or temperature (default: False).
+
+    Returns
+    -------
+    GSData
+        The mock EDGES data.
+
+    Examples
+    --------
+    >>> data = create_mock_edges_data()
+    """
     dt = dt.to(un.day)
     freqs = FrequencyRange.from_edges(f_low=flow, f_high=fhigh, keep_full=False)
     times = Time(

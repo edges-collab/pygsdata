@@ -1,3 +1,5 @@
+"""Tests of the GSData object."""
+
 from datetime import datetime, timedelta
 
 import attrs
