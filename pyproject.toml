@@ -50,8 +50,22 @@ tests = [
 ]
 dev = [
     "pre-commit",
+    "ruff",
     "pygsdata[docs,tests]"
 ]
+
+[tool.ruff]
+line-length = 88
+target-version = "py39"
+
+[tool.ruff.lint]
+extend-select = [
+  "UP",  # pyupgrade
+  "E",   # pycodestyle
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = 'numpy'
 
 
 [tool.pytest.ini_options]

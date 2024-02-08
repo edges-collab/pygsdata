@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # This file is execfile()d with the current directory set to its containing dir.
 #
@@ -8,7 +7,6 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import os
 import sys
 from pathlib import Path
 import datetime
@@ -16,7 +14,6 @@ from importlib.metadata import version as _version
 
 sys.path.insert(0, str(Path(__file__).absolute().parent.parent / "src"))
 
-import pygsdata
 
 # -- General configuration -----------------------------------------------------
 
@@ -53,7 +50,9 @@ napoleon_use_ivar = True
 napoleon_use_rtype = False
 napoleon_use_param = False
 
-mathjax_path = "http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"
+mathjax_path = (
+    "http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"
+)
 
 exclude_patterns = [
     "_build",
@@ -76,7 +75,7 @@ source_suffix = ".md"
 master_doc = "index"
 
 # General information about the project.
-project = u"pygsdata"
+project = "pygsdata"
 copyright = f"{datetime.datetime.now().year}, EDGES Team"
 
 # The version info for the project you're documenting, acts as replacement for
@@ -217,8 +216,8 @@ latex_documents = [
     (
         "index",
         "user_guide.tex",
-        u"pygsdata Documentation",
-        u"EDGES Team",
+        "pygsdata Documentation",
+        "EDGES Team",
         "manual",
     ),
 ]
