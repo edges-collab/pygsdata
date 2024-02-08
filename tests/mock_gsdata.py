@@ -73,7 +73,8 @@ def create_mock_edges_data(
     skydata = spl75(gha)[:, None] * ((freqs.freq / (75 * un.MHz)) ** (-2.5))[None, :]
 
     if add_noise:
-        skydata += np.random.normal(0, 0.001, skydata.shape) * skydata
+        rng = np.random.default_rng()
+        skydata += rng.normal(0, 0.001, skydata.shape) * skydata
 
     data = skydata[None, None]
 

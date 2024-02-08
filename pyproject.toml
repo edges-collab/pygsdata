@@ -72,7 +72,19 @@ extend-select = [
   "B",    # bugbear
   "A",    # builtins
   "C4",   # comprehensions
-  "DTZ"   # datetime
+  "DTZ",  # datetime
+  "FA",   # future annotations
+  "PIE",  # flake8-pie
+  "T",    # print statements
+  "PT",   # pytest-style
+  "Q",    # quotes
+  "SIM",  # simplify
+  "PTH",  # use Pathlib
+  "ERA",  # kill commented code
+  "NPY",  # numpy-specific rules
+  "PERF", # performance
+  # "FURB", # refurb
+  "RUF",  # ruff-specific rules
 ]
 ignore = [
     "DTZ007",   # use %z in strptime
@@ -80,9 +92,13 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 "tests/*.py" = [
     "D103",  # ignore missing docstring in tests
-    "DTZ"    # ignore datetime in tests
+    "DTZ",   # ignore datetime in tests
+    "T",     # print statements
 ]
-"docs/conf.py" = ["A"]   # conf.py can shadow builtins
+"docs/conf.py" = [
+    "A",  # conf.py can shadow builtins
+    "ERA",
+]
 
 [tool.ruff.lint.pydocstyle]
 convention = 'numpy'

@@ -176,7 +176,7 @@ class History:
         if not isinstance(stamp, Stamp):
             raise TypeError("stamp must be a Stamp or a dictionary")
 
-        return evolve(self, stamps=self.stamps + (stamp,))
+        return evolve(self, stamps=(*self.stamps, stamp))
 
     def __len__(self):
         """Return the number of stamps."""

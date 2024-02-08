@@ -20,7 +20,6 @@ def ndim_validator(ndim: int | tuple[int, ...]):
 
     def validator(inst, att, value):
         if value.ndim not in ndim:
-            print(att.validator, value)
             raise ValueError(f"{att.name} must have ndim in {ndim}, got {value.ndim}")
 
     return validator

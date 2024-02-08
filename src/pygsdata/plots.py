@@ -12,7 +12,7 @@ def plot_waterfall(
     data: GSData,
     load: int = 0,
     pol: int = 0,
-    which_flags: tuple[str] = None,
+    which_flags: tuple[str] | None = None,
     ignore_flags: tuple[str] = (),
     ax: plt.Axes | None = None,
     cbar: bool = True,

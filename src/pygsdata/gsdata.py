@@ -392,7 +392,7 @@ class GSData:
             loads = fl.attrs["loads"].split("|")
             auxiliary_measurements = {
                 name: fl["auxiliary_measurements"][name][:]
-                for name in fl["auxiliary_measurements"].keys()
+                for name in fl["auxiliary_measurements"]
             }
             nsamples = fl["nsamples"][:]
 
@@ -407,10 +407,7 @@ class GSData:
 
             history = History.from_repr(fl.attrs["history"])
 
-            if "residuals" in fl:
-                residuals = fl["residuals"][()]
-            else:
-                residuals = None
+            residuals = fl["residuals"][()] if "residuals" in fl else None
 
         return cls(
             data=data,
@@ -651,10 +648,7 @@ class GSData:
         if minutes and not hours:
             raise ValueError("Cannot return minutes without hours")
 
-        if hours:
-            subfmt = "date_hm"
-        else:
-            subfmt = "date"
+        subfmt = "date_hm" if hours else "date"
 
         if self.in_lst:
             raise ValueError(
@@ -689,7 +683,7 @@ class GSData:
         if filt in self.flags:
             raise ValueError(f"Flags for filter '{filt}' already exist")
 
-        new = self.update(flags={**self.flags, **{filt: flags}})
+        new = self.update(flags={**self.flags, filt: flags})
 
         if append_to_file is None:
             append_to_file = new.filename is not None and new._file_appendable
@@ -709,12 +703,9 @@ class GSData:
 
                 flg_grp = fl["flags"]
 
-                if "names" not in flg_grp.attrs:
-                    names_in_file = ()
-                else:
-                    names_in_file = flg_grp.attrs["names"]
+                names_in_file = flg_grp.attrs.get("names", ())
 
-                new_flags = tuple(k for k in new.flags.keys() if k not in names_in_file)
+                new_flags = tuple(k for k in new.flags if k not in names_in_file)
 
                 for name in new_flags:
                     grp = flg_grp.create_group(name)

@@ -137,7 +137,6 @@ def select_lsts(
     indx: np.ndarray | None = None,
     load: int | str = "ant",
     gha: bool = False,
-    use_alan_coordinates: bool = False,
     **kwargs,
 ) -> GSData:
     """Select a subset of the times."""
