@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-import attrs
 import datetime
 import functools
 from typing import Callable, Literal
+
+import attrs
 
 from .gsdata import GSData
 from .gsflag import GSFlag

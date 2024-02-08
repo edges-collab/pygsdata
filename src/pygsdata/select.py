@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 import logging
-import numpy as np
 import warnings
+from typing import Union
+
+import numpy as np
 from astropy import units as un
 from astropy.coordinates import Longitude
 from astropy.time import Time
-from typing import Union
 
 from .gsdata import GSData
 from .register import gsregister

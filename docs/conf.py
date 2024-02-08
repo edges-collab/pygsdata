@@ -7,10 +7,10 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import sys
-from pathlib import Path
 import datetime
+import sys
 from importlib.metadata import version as _version
+from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).absolute().parent.parent / "src"))
 

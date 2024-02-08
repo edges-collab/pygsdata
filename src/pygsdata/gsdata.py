@@ -8,22 +8,23 @@ key methods for data selection, I/O, and analysis.
 
 from __future__ import annotations
 
+import logging
+import warnings
+from collections.abc import Iterable
+from functools import cached_property
+from pathlib import Path
+from typing import Literal
+
 import astropy.units as un
 import h5py
 import hickle
-import logging
 import numpy as np
-import warnings
 from astropy.coordinates import EarthLocation, Longitude, UnknownSiteException
 from astropy.time import Time
 from attrs import converters as cnv
 from attrs import define, evolve, field
 from attrs import validators as vld
-from collections.abc import Iterable
-from functools import cached_property
-from pathlib import Path
 from read_acq.read_acq import ACQError
-from typing import Literal
 
 from . import coordinates as crd
 from .attrs import npfield, timefield

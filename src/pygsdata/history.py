@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from pkg_resources import get_distribution
-
 import contextlib
 import datetime
+
 import yaml
 from attrs import asdict, define, evolve, field
 from attrs import validators as vld
 from hickleable import hickleable
+from pkg_resources import get_distribution
 
 
 @hickleable()

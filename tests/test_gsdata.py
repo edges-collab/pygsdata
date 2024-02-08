@@ -1,12 +1,11 @@
-import pytest
+from datetime import datetime, timedelta
 
 import attrs
 import numpy as np
+import pytest
 from astropy import units as un
 from astropy.coordinates import EarthLocation
 from astropy.time import Time
-from datetime import datetime, timedelta
-
 from pygsdata import (
     GSData,
     GSFlag,

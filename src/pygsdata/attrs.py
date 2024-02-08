@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Callable
+
 import attrs
 import numpy as np
 from astropy import units as un
@@ -9,7 +11,6 @@ from astropy.coordinates import Longitude
 from astropy.time import Time
 from astropy.units import Quantity
 from attrs import Attribute, cmp_using, field
-from typing import Callable
 
 
 def ndim_validator(ndim: int | tuple[int, ...]):

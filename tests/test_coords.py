@@ -1,6 +1,5 @@
 import numpy as np
 from astropy import time as apt
-
 from pygsdata.constants import KNOWN_LOCATIONS
 from pygsdata.coordinates import lsts_to_times
 
