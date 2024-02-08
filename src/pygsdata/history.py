@@ -57,7 +57,7 @@ class Stamp:
             "read_acq",
             "numpy",
             "astropy",
-            "gsdata",
+            "pygsdata",
         ):
             with contextlib.suppress(Exception):
                 out[pkg] = get_distribution(__name__).version

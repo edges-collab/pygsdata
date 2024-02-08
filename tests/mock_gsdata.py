@@ -6,7 +6,7 @@ from astropy.time import Time
 from edges_analysis.const import edges_location
 from edges_analysis.coordinates import lst2gha
 from edges_analysis.data import DATA_PATH
-from edges_analysis.gsdata import GSData
+from edges_analysis.pygsdata import GSData
 from scipy.interpolate import interp1d
 
 from edges_cal.tools import FrequencyRange

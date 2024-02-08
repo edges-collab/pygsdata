@@ -4,6 +4,6 @@ API Reference
 ## cosmotile
 
 ```{eval-rst}
-.. automodule:: gsdata
+.. automodule:: pygsdata
    :members:
 ```

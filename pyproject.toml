@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 
 
 [project]
-name = "gsdata"
+name = "pygsdata"
 description = "A Python interface for 21cm Global Signal Data."
 readme = "README.md"
 authors = [
@@ -50,7 +50,7 @@ tests = [
 ]
 dev = [
     "pre-commit",
-    "gsdata[docs,tests]"
+    "pygsdata[docs,tests]"
 ]
 
 

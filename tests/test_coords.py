@@ -1,8 +1,8 @@
 import numpy as np
 from astropy import time as apt
 
-from gsdata.constants import KNOWN_LOCATIONS
-from gsdata.coordinates import lsts_to_times
+from pygsdata.constants import KNOWN_LOCATIONS
+from pygsdata.coordinates import lsts_to_times
 
 
 def test_lsts_to_times():

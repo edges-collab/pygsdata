@@ -9,8 +9,8 @@ except DistributionNotFound:
 finally:
     del get_distribution, DistributionNotFound
 
-from .gsdata import GSData
 from .gsflag import GSFlag
 from .history import History, Stamp
+from .pygsdata import GSData
 from .register import GSDATA_PROCESSORS, gsregister
 from .select import select_freqs, select_lsts, select_times

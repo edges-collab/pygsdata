@@ -7,7 +7,7 @@ from astropy.coordinates import EarthLocation
 from astropy.time import Time
 from datetime import datetime, timedelta
 
-from gsdata import (
+from pygsdata import (
     GSData,
     GSFlag,
     History,
