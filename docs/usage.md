@@ -1,7 +1,7 @@
 # Usage
 
 The primary data object that all functionality is built around is the
-{class}`gsdata.GSData` object. This object stores all relevant data from
+{class}`pygsdata.GSData` object. This object stores all relevant data from
 a global-signal measurement, and has useful methods for accessing parts of the data,
 as well as reading/writing the data to standard formats (including HDF5 and ACQ).
 
@@ -18,7 +18,7 @@ of the `history` of the object, so no manual updating of the history is required
 To read in data as a GSData object, simply use the `from_file` method:
 
 ```python
-from gsdata import GSData
+from pygsdata import GSData
 data = GSData.from_file('data.acq', telescope_name="EDGES-low")
 ```
 
@@ -67,13 +67,13 @@ data = data.update(
 )
 ```
 
-In actual fact, the history object that is added is a {class}`edges_analysis.gsdata.Stamp`
+In actual fact, the history object that is added is a {class}`edges_analysis.pygsdata.Stamp`
 object, which is a lightweight object that can be easily serialized to YAML, and adds
 a default timestamp and set of code versions to the history. You can use one of these
 directly if you wish:
 
 ```python
-from gsdata import Stamp
+from pygsdata import Stamp
 data = data.update(
     data=data.data * 3,
     data_unit="uncalibrated",
@@ -101,7 +101,7 @@ to do it, as we shall see now.
 ## Using the Register
 
 There is a decorator defined that makes writing new functions that update GSData objects
-simpler, called {func}`gsdata.gsregister`.
+simpler, called {func}`pygsdata.gsregister`.
 This decorator does a few things: it registers the function into a global dictionary,
 `GSDATA_PROCESSORS`, and it adds the function to the `history` of the object.
 *Using* registered functions is simple: just call the function with the object as the
@@ -110,7 +110,7 @@ internally-defined functions have already been registered, you can use them out 
 box. For example:
 
 ```
-from gsdata.select import select_freqs
+from pygsdata.select import select_freqs
 from astropy import units as un
 
 data = select_freqs(data, freq_range=(50*un.MHz, 100*un.MHz))
@@ -142,7 +142,7 @@ Adding your own registered processor is simple -- just use the decorator over a 
 with the correct signature:
 
 ```python
-from gsdata import gsregister, GSData
+from pygsdata import gsregister, GSData
 
 @gsregister("calibrate")
 def pow_data(data: GSData, *, n: int=2) -> GSData:
@@ -162,11 +162,11 @@ available processors.
 
 ## Making Plots
 
-The {mod}`gsdata.plots` module contains functions that can be used to make plots
+The {mod}`pygsdata.plots` module contains functions that can be used to make plots
 from a GSData object. For example, let's say we have a GSData file:
 
 ```python
-from gsdata import GSData, plots
+from pygsdata import GSData, plots
 data = GSData.from_file('2015_202_00.gsh5')
 
 # Plot a flagged waterfall of the data (whether it's residuals or spectra)

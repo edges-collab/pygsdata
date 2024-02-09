@@ -2,15 +2,16 @@
 
 from __future__ import annotations
 
+from functools import cached_property
+from pathlib import Path
+from typing import Protocol
+
 import hickle
 import numpy as np
 from attrs import converters as cnv
 from attrs import define, evolve, field
 from attrs import validators as vld
-from functools import cached_property
 from hickleable import hickleable
-from pathlib import Path
-from typing import Protocol
 
 from .attrs import npfield
 from .history import History, Stamp

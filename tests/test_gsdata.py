@@ -1,13 +1,14 @@
-import pytest
+"""Tests of the GSData object."""
+
+from datetime import datetime, timedelta
 
 import attrs
 import numpy as np
+import pytest
 from astropy import units as un
 from astropy.coordinates import EarthLocation
 from astropy.time import Time
-from datetime import datetime, timedelta
-
-from gsdata import (
+from pygsdata import (
     GSData,
     GSFlag,
     History,

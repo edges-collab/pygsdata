@@ -8,22 +8,23 @@ key methods for data selection, I/O, and analysis.
 
 from __future__ import annotations
 
+import logging
+import warnings
+from collections.abc import Iterable
+from functools import cached_property
+from pathlib import Path
+from typing import Literal
+
 import astropy.units as un
 import h5py
 import hickle
-import logging
 import numpy as np
-import warnings
 from astropy.coordinates import EarthLocation, Longitude, UnknownSiteException
 from astropy.time import Time
 from attrs import converters as cnv
 from attrs import define, evolve, field
 from attrs import validators as vld
-from collections.abc import Iterable
-from functools import cached_property
-from pathlib import Path
 from read_acq.read_acq import ACQError
-from typing import Literal
 
 from . import coordinates as crd
 from .attrs import npfield, timefield
@@ -109,9 +110,9 @@ class GSData:
         default=None, possible_ndims=(4,), dtype=float
     )
 
-    data_unit: Literal["power", "temperature", "uncalibrated", "uncalibrated_temp"] = (
-        field(default="power")
-    )
+    data_unit: Literal[
+        "power", "temperature", "uncalibrated", "uncalibrated_temp"
+    ] = field(default="power")
     auxiliary_measurements: dict = field(factory=dict)
     time_ranges: Time | Longitude = timefield(shape=(None, None, 2))
     filename: Path | None = field(default=None, converter=cnv.optional(Path))
@@ -296,7 +297,8 @@ class GSData:
     def resids(self) -> np.ndarray | None:
         """The residuals of the data."""
         warnings.warn(
-            DeprecationWarning("Use the 'residuals' attribute instead of 'resids'")
+            DeprecationWarning("Use the 'residuals' attribute instead of 'resids'"),
+            stacklevel=2,
         )
         return self.residuals
 
@@ -331,11 +333,11 @@ class GSData:
             except UnknownSiteException:
                 try:
                     telescope_location = KNOWN_LOCATIONS[telescope_location]
-                except KeyError:
+                except KeyError as e:
                     raise ValueError(
                         "telescope_location must be an EarthLocation or a known site, "
                         f"got {telescope_location}"
-                    )
+                    ) from e
 
         year, day, hour, minute = times[0, 0].to_value("yday", "date_hm").split(":")
         name = name.format(
@@ -390,7 +392,7 @@ class GSData:
             loads = fl.attrs["loads"].split("|")
             auxiliary_measurements = {
                 name: fl["auxiliary_measurements"][name][:]
-                for name in fl["auxiliary_measurements"].keys()
+                for name in fl["auxiliary_measurements"]
             }
             nsamples = fl["nsamples"][:]
 
@@ -405,10 +407,7 @@ class GSData:
 
             history = History.from_repr(fl.attrs["history"])
 
-            if "residuals" in fl:
-                residuals = fl["residuals"][()]
-            else:
-                residuals = None
+            residuals = fl["residuals"][()] if "residuals" in fl else None
 
         return cls(
             data=data,
@@ -446,9 +445,9 @@ class GSData:
 
             fl.attrs["loads"] = "|".join(self.loads)
             fl["nsamples"] = self.nsamples
-            fl.attrs["effective_integration_time"] = (
-                self.effective_integration_time.to_value("s")
-            )
+            fl.attrs[
+                "effective_integration_time"
+            ] = self.effective_integration_time.to_value("s")
 
             flg_grp = fl.create_group("flags")
             if self.flags:
@@ -649,10 +648,7 @@ class GSData:
         if minutes and not hours:
             raise ValueError("Cannot return minutes without hours")
 
-        if hours:
-            subfmt = "date_hm"
-        else:
-            subfmt = "date"
+        subfmt = "date_hm" if hours else "date"
 
         if self.in_lst:
             raise ValueError(
@@ -687,7 +683,7 @@ class GSData:
         if filt in self.flags:
             raise ValueError(f"Flags for filter '{filt}' already exist")
 
-        new = self.update(flags={**self.flags, **{filt: flags}})
+        new = self.update(flags={**self.flags, filt: flags})
 
         if append_to_file is None:
             append_to_file = new.filename is not None and new._file_appendable
@@ -707,12 +703,9 @@ class GSData:
 
                 flg_grp = fl["flags"]
 
-                if "names" not in flg_grp.attrs:
-                    names_in_file = ()
-                else:
-                    names_in_file = flg_grp.attrs["names"]
+                names_in_file = flg_grp.attrs.get("names", ())
 
-                new_flags = tuple(k for k in new.flags.keys() if k not in names_in_file)
+                new_flags = tuple(k for k in new.flags if k not in names_in_file)
 
                 for name in new_flags:
                     grp = flg_grp.create_group(name)

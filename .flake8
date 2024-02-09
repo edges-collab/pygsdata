@@ -18,4 +18,4 @@ exclude =
     devel/*
 per-file-ignores =
     tests/*:D
-    src/gsdata/__init__.py:F401
+    src/pygsdata/__init__.py:F401

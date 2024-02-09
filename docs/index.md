@@ -17,5 +17,5 @@ authors
 contributing
 Code of Conduct <codeofconduct>
 License <license>
-Changelog <https://github.com/edges-collab/gsdata/releases>
+Changelog <https://github.com/edges-collab/pygsdata/releases>
 ```

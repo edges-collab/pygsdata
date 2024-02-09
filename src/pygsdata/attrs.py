@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Callable
+
 import attrs
 import numpy as np
 from astropy import units as un
@@ -9,7 +11,6 @@ from astropy.coordinates import Longitude
 from astropy.time import Time
 from astropy.units import Quantity
 from attrs import Attribute, cmp_using, field
-from typing import Callable
 
 
 def ndim_validator(ndim: int | tuple[int, ...]):
@@ -19,7 +20,6 @@ def ndim_validator(ndim: int | tuple[int, ...]):
 
     def validator(inst, att, value):
         if value.ndim not in ndim:
-            print(att.validator, value)
             raise ValueError(f"{att.name} must have ndim in {ndim}, got {value.ndim}")
 
     return validator
@@ -74,6 +74,24 @@ def unit_validator(unit):
     return validator
 
 
+def _cmp_bool_array(x, y):
+    if x is None and y is None:
+        return True
+    elif x is None or y is None:
+        return False
+    else:
+        return np.array_equal(x, y)
+
+
+def _cmp_num_array(x, y):
+    if x is None and y is None:
+        return True
+    elif x is None or y is None:
+        return False
+    else:
+        return x.shape == y.shape and np.allclose(x, y)
+
+
 def npfield(
     dtype=None,
     possible_ndims: tuple[int] | None = None,
@@ -88,26 +106,6 @@ def npfield(
         required = False
     elif required is None:
         required = True
-
-    if dtype is bool:
-
-        def cmp(x, y):
-            if x is None and y is None:
-                return True
-            elif x is None or y is None:
-                return False
-            else:
-                return np.array_equal(x, y)
-
-    else:
-
-        def cmp(x, y):
-            if x is None and y is None:
-                return True
-            elif x is None or y is None:
-                return False
-            else:
-                return x.shape == y.shape and np.allclose(x, y)
 
     if validator is None:
         validator = []
@@ -130,7 +128,7 @@ def npfield(
             kwargs["validator"] = attrs.validators.optional(validator)
 
     return field(
-        eq=cmp_using(cmp),
+        eq=cmp_using(_cmp_bool_array if dtype == bool else _cmp_num_array),
         converter=array_converter(dtype=dtype, allow_none=not required),
         **kwargs,
     )

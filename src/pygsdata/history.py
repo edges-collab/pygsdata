@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from pkg_resources import get_distribution
-
 import contextlib
 import datetime
+
 import yaml
 from attrs import asdict, define, evolve, field
 from attrs import validators as vld
 from hickleable import hickleable
+from pkg_resources import get_distribution
 
 
 @hickleable()
@@ -57,7 +57,7 @@ class Stamp:
             "read_acq",
             "numpy",
             "astropy",
-            "gsdata",
+            "pygsdata",
         ):
             with contextlib.suppress(Exception):
                 out[pkg] = get_distribution(__name__).version
@@ -176,7 +176,7 @@ class History:
         if not isinstance(stamp, Stamp):
             raise TypeError("stamp must be a Stamp or a dictionary")
 
-        return evolve(self, stamps=self.stamps + (stamp,))
+        return evolve(self, stamps=(*self.stamps, stamp))
 
     def __len__(self):
         """Return the number of stamps."""

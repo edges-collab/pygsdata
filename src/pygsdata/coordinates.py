@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import datetime as dt
+
 import numpy as np
+import pytz
 from astropy import coordinates as apc
 from astropy import time as apt
 from astropy import units as apu
@@ -34,7 +36,8 @@ def utc2lst(utc_time_array, longitude):
     # convert input array to "int"
     if not isinstance(utc_time_array[0], dt.datetime):
         utc_time_array = [
-            dt.datetime(*utc) for utc in np.atleast_2d(utc_time_array).astype(int)
+            dt.datetime(*utc, tzinfo=pytz.utc)
+            for utc in np.atleast_2d(utc_time_array).astype(int)
         ]
 
     # python "datetime" to astropy "Time" format
@@ -94,13 +97,13 @@ def gha2lst(gha: float | np.ndarray) -> float | np.ndarray:
 
 def get_jd(d: dt.datetime) -> int:
     """Get the day of the year from a datetime object."""
-    dt0 = dt.datetime(d.year, 1, 1)
+    dt0 = dt.datetime(d.year, 1, 1, tzinfo=d.tzinfo)
     return (d - dt0).days + 1
 
 
-def dt_from_jd(y: int, d: int, *args) -> dt.datetime:
+def dt_from_jd(y: int, d: int, *args, tzinfo=pytz.utc) -> dt.datetime:
     """Get a datetime object from a julian date."""
-    begin = dt.datetime(y, 1, 1, *args)
+    begin = dt.datetime(y, 1, 1, *args, tzinfo=tzinfo)
     return begin + dt.timedelta(days=d - 1)
 
 

@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 import logging
-import numpy as np
 import warnings
+from typing import Union
+
+import numpy as np
 from astropy import units as un
 from astropy.coordinates import Longitude
 from astropy.time import Time
-from typing import Union
 
 from .gsdata import GSData
 from .register import gsregister
@@ -31,7 +32,9 @@ def select_freqs(
 ) -> GSData:
     """Select a subset of the frequency channels."""
     if "range" in kwargs:
-        warnings.warn("The 'range' keyword is deprecated, use 'freq_range' instead.")
+        warnings.warn(
+            "The 'range' keyword is deprecated, use 'freq_range' instead.", stacklevel=2
+        )
         freq_range = kwargs.pop("range")
 
     if kwargs:
@@ -93,7 +96,9 @@ def select_times(
         raise ValueError("LST-binned data cannot be selected on times.")
 
     if "range" in kwargs:
-        warnings.warn("The 'range' keyword is deprecated, use 'time_range' instead.")
+        warnings.warn(
+            "The 'range' keyword is deprecated, use 'time_range' instead.", stacklevel=2
+        )
         time_range = kwargs.pop("range")
 
     if kwargs:
@@ -132,7 +137,6 @@ def select_lsts(
     indx: np.ndarray | None = None,
     load: int | str = "ant",
     gha: bool = False,
-    use_alan_coordinates: bool = False,
     **kwargs,
 ) -> GSData:
     """Select a subset of the times."""

@@ -12,9 +12,9 @@ Here is a list of important resources for contributors:
 - [Code of Conduct]
 
 [mit license]: https://opensource.org/licenses/MIT
-[source code]: https://github.com/edges-collab/gsdata
-[documentation]: https://gsdata.readthedocs.io/
-[issue tracker]: https://github.com/edges-collab/gsdata/issues
+[source code]: https://github.com/edges-collab/pygsdata
+[documentation]: https://pygsdata.readthedocs.io/
+[issue tracker]: https://github.com/edges-collab/pygsdata/issues
 
 ## How to report a bug
 
@@ -76,7 +76,7 @@ $ pre-commit intsall
 It is recommended to open an issue before starting work on anything.
 This will allow a chance to talk it over with the owners and validate your approach.
 
-[pull request]: https://github.com/edges-collab/gsdata/pulls
+[pull request]: https://github.com/edges-collab/pygsdata/pulls
 
 <!-- github-only -->
 
