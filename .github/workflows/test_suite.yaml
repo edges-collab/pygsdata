@@ -90,7 +90,7 @@ jobs:
           if-no-files-found: error
 
   codecov:
-    needs: [downstream, tests]
+    needs: [tests]
     name: Codecov Reporting
     runs-on: ubuntu-latest
     steps:
