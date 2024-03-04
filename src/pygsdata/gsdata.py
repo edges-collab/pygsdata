@@ -13,24 +13,23 @@ import warnings
 from collections.abc import Iterable
 from functools import cached_property
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 import astropy.units as un
 import h5py
 import hickle
 import numpy as np
-from astropy.coordinates import EarthLocation, Longitude, UnknownSiteException
+from astropy.coordinates import EarthLocation, Longitude
 from astropy.time import Time
 from attrs import converters as cnv
 from attrs import define, evolve, field
 from attrs import validators as vld
-from read_acq.read_acq import ACQError
 
 from . import coordinates as crd
 from .attrs import npfield, timefield
-from .constants import KNOWN_LOCATIONS
 from .gsflag import GSFlag
 from .history import History, Stamp
+from .readers import GSDATA_READERS
 
 logger = logging.getLogger(__name__)
 
@@ -303,127 +302,46 @@ class GSData:
         return self.residuals
 
     @classmethod
-    def read_acq(
+    def from_file(
         cls,
         filename: str | Path,
-        telescope_location: str | EarthLocation,
-        name="{year}_{day}",
+        reader: str | None = None,
+        selectors: dict[str, Any] | None = None,
         **kw,
     ) -> GSData:
-        """Read an ACQ file."""
-        filename = Path(filename)
-
-        try:
-            from read_acq import read_acq
-        except ImportError as e:
-            raise ImportError(
-                "read_acq is not installed -- install it to read ACQ files"
-            ) from e
-
-        _, (pant, pload, plns), anc = read_acq.decode_file(filename, meta=True)
-
-        if pant.size == 0:
-            raise ACQError(f"No data in file {filename}")
-
-        times = Time(anc.data.pop("times"), format="yday", scale="utc")
-
-        if isinstance(telescope_location, str):
-            try:
-                telescope_location = EarthLocation.of_site(telescope_location)
-            except UnknownSiteException:
-                try:
-                    telescope_location = KNOWN_LOCATIONS[telescope_location]
-                except KeyError as e:
-                    raise ValueError(
-                        "telescope_location must be an EarthLocation or a known site, "
-                        f"got {telescope_location}"
-                    ) from e
-
-        year, day, hour, minute = times[0, 0].to_value("yday", "date_hm").split(":")
-        name = name.format(
-            year=year, day=day, hour=hour, minute=minute, stem=filename.stem
-        )
-        return cls(
-            data=np.array([pant.T, pload.T, plns.T])[:, np.newaxis],
-            time_array=times,
-            freq_array=anc.frequencies * un.MHz,
-            data_unit="power",
-            loads=("ant", "internal_load", "internal_load_plus_noise_source"),
-            auxiliary_measurements={name: anc.data[name] for name in anc.data},
-            filename=filename,
-            telescope_location=telescope_location,
-            name=name,
-            **kw,
-        )
-
-    @classmethod
-    def from_file(cls, filename: str | Path, **kw) -> GSData:
         """Create a GSData instance from a file.
 
         This method attempts to auto-detect the file type and read it.
         """
         filename = Path(filename)
 
-        if filename.suffix == ".acq":
-            return cls.read_acq(filename, **kw)
-        elif filename.suffix == ".gsh5":
-            return cls.read_gsh5(filename)
-        else:
-            raise ValueError("Unrecognized file type")
+        selectors = selectors or {}
 
-    @classmethod
-    def read_gsh5(cls, filename: str) -> GSData:
-        """Read a GSH5 file to construct the object."""
-        with h5py.File(filename, "r") as fl:
-            data = fl["data"][:]
-            lat, lon, alt = fl["telescope_location"][:]
-            telescope_location = EarthLocation(
-                lat=lat * un.deg, lon=lon * un.deg, height=alt * un.m
-            )
-            times = fl["time_array"][:]
+        if reader is None:
+            reader = filename.suffix[1:]
 
-            if np.all(times < 24.0):
-                time_array = Longitude(times * un.hour)
-            else:
-                time_array = Time(times, format="jd", location=telescope_location)
-            freq_array = fl["freq_array"][:] * un.MHz
-            data_unit = fl.attrs["data_unit"]
-            objname = fl.attrs["name"]
-            loads = fl.attrs["loads"].split("|")
-            auxiliary_measurements = {
-                name: fl["auxiliary_measurements"][name][:]
-                for name in fl["auxiliary_measurements"]
-            }
-            nsamples = fl["nsamples"][:]
+        fnc = next((k for k in GSDATA_READERS.values() if reader in k.suffices), None)
 
-            flg_grp = fl["flags"]
-            flags = {}
-            if "names" in flg_grp.attrs:
-                flag_keys = flg_grp.attrs["names"]
-                for name in flag_keys:
-                    flags[name] = hickle.load(fl["flags"][name])
+        if reader is None:
+            raise ValueError(f"Unrecognized file type {reader}")
 
-            filename = filename
+        if fnc.select_on_read:
+            return fnc(filename, selectors=selectors, **kw)
 
-            history = History.from_repr(fl.attrs["history"])
+        from .select import select_freqs, select_loads, select_lsts, select_times
 
-            residuals = fl["residuals"][()] if "residuals" in fl else None
+        data = fnc(filename, **kw)
 
-        return cls(
-            data=data,
-            time_array=time_array,
-            freq_array=freq_array,
-            data_unit=data_unit,
-            loads=loads,
-            auxiliary_measurements=auxiliary_measurements,
-            filename=filename,
-            nsamples=nsamples,
-            flags=flags,
-            history=history,
-            telescope_location=telescope_location,
-            residuals=residuals,
-            name=objname,
-        )
+        if "freq_selector" in selectors:
+            data = select_freqs(data, **selectors["freq_selector"])
+        if "time_selector" in selectors:
+            data = select_times(data, **selectors["time_selector"])
+        if "lst_selector" in selectors:
+            data = select_lsts(data, **selectors["lst_selector"])
+        if "load_selector" in selectors:
+            data = select_loads(data, **selectors["load_selector"])
+
+        return data
 
     def write_gsh5(self, filename: str) -> GSData:
         """Write the data in the GSData object to a GSH5 file."""

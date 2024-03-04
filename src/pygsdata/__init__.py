@@ -10,11 +10,11 @@ finally:
     del get_distribution, DistributionNotFound
 
 __all__ = [
+    "GSDATA_PROCESSORS",
     "GSData",
     "GSFlag",
     "History",
     "Stamp",
-    "GSDATA_PROCESSORS",
     "gsregister",
     "select_freqs",
     "select_lsts",

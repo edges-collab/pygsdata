@@ -128,7 +128,7 @@ def npfield(
             kwargs["validator"] = attrs.validators.optional(validator)
 
     return field(
-        eq=cmp_using(_cmp_bool_array if dtype == bool else _cmp_num_array),
+        eq=cmp_using(_cmp_bool_array if dtype is bool else _cmp_num_array),
         converter=array_converter(dtype=dtype, allow_none=not required),
         **kwargs,
     )
