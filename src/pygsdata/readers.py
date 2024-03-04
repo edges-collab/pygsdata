@@ -12,7 +12,7 @@ from astropy.time import Time
 
 from pygsdata.history import History
 
-from ..pygsdata import GSData
+from .pygsdata import GSData
 from .select import (
     freq_selector,
     load_selector,
