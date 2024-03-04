@@ -10,9 +10,8 @@ from astropy import units as un
 from astropy.coordinates import EarthLocation, Longitude
 from astropy.time import Time
 
-from pygsdata.history import History
-
-from .pygsdata import GSData
+from .gsdata import GSData
+from .history import History
 from .select import (
     freq_selector,
     load_selector,

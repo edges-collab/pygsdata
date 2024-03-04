@@ -29,7 +29,6 @@ from . import coordinates as crd
 from .attrs import npfield, timefield
 from .gsflag import GSFlag
 from .history import History, Stamp
-from .readers import GSDATA_READERS
 
 logger = logging.getLogger(__name__)
 
@@ -312,6 +311,8 @@ class GSData:
 
         This method attempts to auto-detect the file type and read it.
         """
+        from .readers import GSDATA_READERS
+
         selectors = selectors or {}
 
         def _from_file(pth, reader):

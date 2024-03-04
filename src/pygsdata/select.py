@@ -109,8 +109,8 @@ def time_selector(
                 Time(time_range[1], format=fmt),
             )
 
-            t = times[:, load]
-            mask = (t >= time_range[0]) & (t <= time_range[1])
+        t = times[:, load]
+        mask = (t >= time_range[0]) & (t <= time_range[1])
 
     if indx is not None:
         if mask is None:
@@ -216,7 +216,12 @@ def select_times(
         raise ValueError(f"Unknown keyword arguments: {kwargs}")
 
     mask = time_selector(
-        data.time_array, time_range=time_range, fmt=fmt, indx=indx, load=load
+        data.time_array,
+        data.loads,
+        time_range=time_range,
+        fmt=fmt,
+        indx=indx,
+        load=load,
     )
     return _mask_times(data, mask)
 
