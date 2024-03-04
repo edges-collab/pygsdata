@@ -90,9 +90,7 @@ class GSData:
     time_array: Time | Longitude = timefield(possible_ndims=(2,))
     telescope_location: EarthLocation = field(
         validator=vld.instance_of(EarthLocation),
-        converter=lambda x: (
-            EarthLocation(*x) if not isinstance(x, EarthLocation) else x
-        ),
+        converter=lambda x: (x if isinstance(x, EarthLocation) else EarthLocation(*x)),
     )
 
     loads: tuple[str] = field(converter=tuple)
@@ -307,41 +305,55 @@ class GSData:
         filename: str | Path,
         reader: str | None = None,
         selectors: dict[str, Any] | None = None,
+        concat_axis: Literal["load", "pol", "time", "freq"] | None = None,
         **kw,
     ) -> GSData:
         """Create a GSData instance from a file.
 
         This method attempts to auto-detect the file type and read it.
         """
-        filename = Path(filename)
-
         selectors = selectors or {}
 
-        if reader is None:
-            reader = filename.suffix[1:]
+        def _from_file(pth, reader):
+            filename = Path(pth)
 
-        fnc = next((k for k in GSDATA_READERS.values() if reader in k.suffices), None)
+            if reader is None:
+                reader = filename.suffix[1:]
 
-        if reader is None:
-            raise ValueError(f"Unrecognized file type {reader}")
+            fnc = next(
+                (k for k in GSDATA_READERS.values() if reader in k.suffices), None
+            )
 
-        if fnc.select_on_read:
-            return fnc(filename, selectors=selectors, **kw)
+            if reader is None:
+                raise ValueError(f"Unrecognized file type {reader}")
 
-        from .select import select_freqs, select_loads, select_lsts, select_times
+            if fnc.select_on_read:
+                return fnc(filename, selectors=selectors, **kw)
 
-        data = fnc(filename, **kw)
+            from .select import select_freqs, select_loads, select_lsts, select_times
 
-        if "freq_selector" in selectors:
-            data = select_freqs(data, **selectors["freq_selector"])
-        if "time_selector" in selectors:
-            data = select_times(data, **selectors["time_selector"])
-        if "lst_selector" in selectors:
-            data = select_lsts(data, **selectors["lst_selector"])
-        if "load_selector" in selectors:
-            data = select_loads(data, **selectors["load_selector"])
+            data = fnc(filename, **kw)
 
-        return data
+            if "freq_selector" in selectors:
+                data = select_freqs(data, **selectors["freq_selector"])
+            if "time_selector" in selectors:
+                data = select_times(data, **selectors["time_selector"])
+            if "lst_selector" in selectors:
+                data = select_lsts(data, **selectors["lst_selector"])
+            if "load_selector" in selectors:
+                data = select_loads(data, **selectors["load_selector"])
+
+            return data
+
+        filename = [filename] if isinstance(filename, str) else filename
+        datas = [_from_file(pth, reader) for pth in filename]
+
+        if len(datas) == 1:
+            return datas[0]
+
+        from .concat import concat
+
+        return concat(datas, concat_axis)
 
     def write_gsh5(self, filename: str) -> GSData:
         """Write the data in the GSData object to a GSH5 file."""

@@ -88,6 +88,7 @@ extend-select = [
 ]
 ignore = [
     "DTZ007",   # use %z in strptime
+    "A003",     # class attribute shadows python builtin
 ]
 [tool.ruff.lint.per-file-ignores]
 "tests/*.py" = [

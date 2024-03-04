@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from functools import cached_property
 from pathlib import Path
 from typing import Protocol
@@ -328,6 +329,26 @@ class GSFlag:
             filename=None,
         )
 
-    def any(self, axis: str | None = None) -> bool | Self:  # noqa: A003
+    def any(self, axis: str | None = None) -> bool | Self:
         """Return True if any of the flags are True."""
         return self.flags.any() if axis is None else self.op_on_axis(np.any, axis)
+
+    def concat(self, others: GSFlag | Sequence[GSFlag], axis: str) -> GSFlag:
+        """Get a new GSFlag by concatenating other flags to this one."""
+        if isinstance(others, GSFlag):
+            others = [others]
+
+        if axis not in ("load", "pol", "time", "freq"):
+            raise ValueError(f"Axis {axis} not recognized")
+
+        if axis not in self.axes:
+            raise ValueError(f"Axis {axis} not present in this GSFlag object")
+
+        new_flags = np.concatenate(
+            [self.flags] + [o.flags for o in others], axis=self.axes.index(axis)
+        )
+        return self.update(
+            flags=new_flags,
+            history=self.history.add(Stamp("Concatenated GSFlag objects", axis=axis)),
+            filename=None,
+        )
