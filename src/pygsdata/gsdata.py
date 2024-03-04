@@ -325,7 +325,7 @@ class GSData:
                 (k for k in GSDATA_READERS.values() if reader in k.suffices), None
             )
 
-            if reader is None:
+            if fnc is None:
                 raise ValueError(f"Unrecognized file type {reader}")
 
             if fnc.select_on_read:

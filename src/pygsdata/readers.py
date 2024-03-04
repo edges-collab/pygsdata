@@ -23,15 +23,18 @@ GSDATA_READERS = {}
 
 
 def gsdata_reader(
-    func: callable,
     formats: list[str],
     select_on_read: bool = False,
 ):
     """Register a function as a reader for GSData objects."""
-    func.select_on_read = select_on_read
-    func.suffices = formats
-    GSDATA_READERS[func.__name__] = func
-    return func
+
+    def inner(func):
+        func.select_on_read = select_on_read
+        func.suffices = formats
+        GSDATA_READERS[func.__name__] = func
+        return func
+
+    return inner
 
 
 @gsdata_reader(select_on_read=True, formats=["gsh5"])
