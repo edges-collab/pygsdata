@@ -6,13 +6,13 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Self
 
 import attrs
 import h5py
 from astropy import units as un
 from astropy.coordinates import Angle, EarthLocation
 from attrs import field
+from typing_extensions import Self
 
 from .attrs import unit_validator
 from .types import TimeType
