@@ -2,7 +2,7 @@
 
 import numpy as np
 from astropy import time as apt
-from pygsdata.constants import KNOWN_LOCATIONS
+from pygsdata.constants import KNOWN_TELESCOPES
 from pygsdata.coordinates import lsts_to_times
 
 
@@ -13,7 +13,7 @@ def test_lsts_to_times():
     times = lsts_to_times(
         lsts=lsts,
         ref_time=apt.Time("2020-01-01T00:00:00"),
-        location=KNOWN_LOCATIONS["edges"],
+        location=KNOWN_TELESCOPES["edges-low"].location,
     )
 
     for time in times:

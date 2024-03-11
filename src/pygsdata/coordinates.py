@@ -13,13 +13,13 @@ from astropy import units as apu
 from . import constants as const
 
 
-def utc2lst(utc_time_array, longitude):
+def utc2lst(utc_times, longitude):
     """
     Convert an array representing UTC date/time to a 1D array of LST date/time.
 
     Parameters
     ----------
-    utc_time_array : array-like
+    utc_times : array-like
         Nx6 array of floats or integers, where each row is of the form
         [yyyy, mm, dd,HH, MM, SS]. It can also be a 6-element 1D array.
     longitude : float
@@ -31,17 +31,17 @@ def utc2lst(utc_time_array, longitude):
 
     Examples
     --------
-    >>> LST = utc2lst(utc_time_array, -27.5)
+    >>> LST = utc2lst(utc_times, -27.5)
     """
     # convert input array to "int"
-    if not isinstance(utc_time_array[0], dt.datetime):
-        utc_time_array = [
+    if not isinstance(utc_times[0], dt.datetime):
+        utc_times = [
             dt.datetime(*utc, tzinfo=pytz.utc)
-            for utc in np.atleast_2d(utc_time_array).astype(int)
+            for utc in np.atleast_2d(utc_times).astype(int)
         ]
 
     # python "datetime" to astropy "Time" format
-    t = apt.Time(utc_time_array, format="datetime", scale="utc")
+    t = apt.Time(utc_times, format="datetime", scale="utc")
 
     # necessary approximation to compute sidereal time
     t.delta_ut1_utc = 0

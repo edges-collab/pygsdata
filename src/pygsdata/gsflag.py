@@ -68,16 +68,16 @@ class GSFlag:
 
     @axes.validator
     def _axes_vld(self, _, value):
-        if not len(set(value)) == len(value):
+        if len(set(value)) != len(value):
             raise ValueError(f"Axes must be unique, got {value}")
 
-        if not all(ax in ("load", "pol", "time", "freq") for ax in value):
+        if any(ax not in self._axes for ax in value):
             raise ValueError("Axes must be a subset of load, pol, time, freq")
 
-        idx = [value.index(ax) for ax in ("load", "pol", "time", "freq") if ax in value]
+        idx = [value.index(ax) for ax in self._axes if ax in value]
 
-        if not idx == sorted(idx):
-            raise ValueError("Axes must be in order load, pol, time, freq")
+        if idx != sorted(idx):
+            raise ValueError(f"Axes must be in order {self._axes}")
 
     @axes.default
     def _axes_default(self):
@@ -99,9 +99,7 @@ class GSFlag:
     @cached_property
     def nloads(self) -> int | None:
         """The number of loads."""
-        if "load" not in self.axes:
-            return None
-        return self.flags.shape[0]
+        return None if "load" not in self.axes else self.flags.shape[0]
 
     @property
     def ntimes(self) -> int | None:
@@ -113,9 +111,7 @@ class GSFlag:
     @property
     def npols(self) -> int | None:
         """The number of polarizations."""
-        if "pol" not in self.axes:
-            return None
-        return self.flags.shape[self.axes.index("pol")]
+        return self.flags.shape[self.axes.index("pol")] if "pol" in self.axes else None
 
     @classmethod
     def from_file(cls, filename: str | Path, filetype: str | None = None, **kw) -> Self:
@@ -192,8 +188,8 @@ class GSFlag:
             and self.nloads != other.nloads
         ):
             raise ValueError(
-                "Cannot multiply GSFlag objects with different loads. Got "
-                f"{self.nloads} and {other.nloads}."
+                "Objects have different nloads. Got "
+                f"this={self.nloads} and that={other.nloads}."
             )
 
         if (
@@ -202,8 +198,8 @@ class GSFlag:
             and self.npols != other.npols
         ):
             raise ValueError(
-                "Cannot multiply GSFlag objects with different polarizations. Got "
-                f"{self.npols} and {other.npols}"
+                "Objects have different npols. Got "
+                f"this={self.npols} and that={other.npols}"
             )
 
         if (
@@ -212,8 +208,8 @@ class GSFlag:
             and self.ntimes != other.ntimes
         ):
             raise ValueError(
-                "Cannot multiply GSFlag objects with different times. Got "
-                f"{self.ntimes} and {other.ntimes}"
+                "Objects have different ntimes. Got "
+                f"this={self.ntimes} and that={other.ntimes}"
             )
 
         if (
@@ -222,8 +218,8 @@ class GSFlag:
             and self.nfreqs != other.nfreqs
         ):
             raise ValueError(
-                "Cannot multiply GSFlag objects with different frequencies. Got "
-                f"{self.nfreqs} and {other.nfreqs}"
+                "Objects different frequencies. Got "
+                f"this={self.nfreqs} and that={other.nfreqs}"
             )
 
     def __or__(self, other: GSFlag) -> Self:
@@ -349,6 +345,8 @@ class GSFlag:
         )
         return self.update(
             flags=new_flags,
-            history=self.history.add(Stamp("Concatenated GSFlag objects", axis=axis)),
+            history=self.history.add(
+                Stamp("Concatenated GSFlag objects", parameters={"axis": axis})
+            ),
             filename=None,
         )

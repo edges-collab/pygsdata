@@ -6,13 +6,14 @@ import attrs
 import numpy as np
 import pytest
 from astropy import units as un
-from astropy.coordinates import EarthLocation
 from astropy.time import Time
 from pygsdata import (
+    KNOWN_TELESCOPES,
     GSData,
     GSFlag,
     History,
     Stamp,
+    Telescope,
     gsregister,
     select_freqs,
     select_lsts,
@@ -21,21 +22,26 @@ from pygsdata import (
 
 
 @pytest.fixture(scope="module")
-def simple_gsdata():
+def edges() -> Telescope:
+    return KNOWN_TELESCOPES["edges-low"]
+
+
+@pytest.fixture(scope="module")
+def simple_gsdata(edges):
     return GSData(
         data=np.zeros((1, 1, 50, 100)),
-        freq_array=np.linspace(50, 100, 100) * un.MHz,
-        time_array=Time(np.linspace(2459811, 2459812, 50)[:, np.newaxis], format="jd"),
-        telescope_location=EarthLocation(lat=0, lon=0),
+        freqs=np.linspace(50, 100, 100) * un.MHz,
+        times=Time(np.linspace(2459811, 2459812, 50)[:, np.newaxis], format="jd"),
+        telescope=edges,
     )
 
 
 @pytest.fixture(scope="module")
-def power_gsdata():
+def power_gsdata(edges):
     return GSData(
         data=np.zeros((3, 1, 50, 100)),
-        freq_array=np.linspace(50, 100, 100) * un.MHz,
-        time_array=Time(
+        freqs=np.linspace(50, 100, 100) * un.MHz,
+        times=Time(
             np.array(
                 [
                     np.linspace(2459811, 2459812, 50),
@@ -45,7 +51,7 @@ def power_gsdata():
             ).T,
             format="jd",
         ),
-        telescope_location=EarthLocation(lat=0, lon=0),
+        telescope=edges,
     )
 
 
@@ -57,12 +63,12 @@ def test_default_power_load_names(power_gsdata):
     )
 
 
-def test_bad_load_names():
+def test_bad_load_names(edges):
     with pytest.raises(ValueError, match="If data has more than one source"):
         GSData(
             data=np.zeros((2, 1, 50, 100)),
-            freq_array=np.linspace(50, 100, 100) * un.MHz,
-            time_array=Time(
+            freqs=np.linspace(50, 100, 100) * un.MHz,
+            times=Time(
                 np.array(
                     [
                         np.linspace(2459811, 2459812, 50),
@@ -71,7 +77,7 @@ def test_bad_load_names():
                 ).T,
                 format="jd",
             ),
-            telescope_location=EarthLocation(lat=0, lon=0),
+            telescope=edges,
         )
 
 
@@ -157,19 +163,17 @@ def test_bad_gsdata_init(simple_gsdata: GSData):
             }
         )
 
-    with pytest.raises(TypeError, match="freq_array must be a Quantity"):
-        simple_gsdata.update(freq_array=np.linspace(50, 100, 100))
+    with pytest.raises(TypeError, match="freqs must be a Quantity"):
+        simple_gsdata.update(freqs=np.linspace(50, 100, 100))
 
-    with pytest.raises(
-        ValueError, match="freq_array must have units compatible with MHz"
-    ):
-        simple_gsdata.update(freq_array=np.linspace(50, 100, 100) * un.m)
+    with pytest.raises(ValueError, match="freqs must have units compatible with MHz"):
+        simple_gsdata.update(freqs=np.linspace(50, 100, 100) * un.m)
 
-    with pytest.raises(ValueError, match="freq_array must have the size nfreqs"):
-        simple_gsdata.update(freq_array=simple_gsdata.freq_array[:-1])
+    with pytest.raises(ValueError, match="freqs must have the size nfreqs"):
+        simple_gsdata.update(freqs=simple_gsdata.freqs[:-1])
 
-    with pytest.raises(ValueError, match="time_array must have ndim in "):
-        simple_gsdata.update(time_array=simple_gsdata.time_array[:, 0])
+    with pytest.raises(ValueError, match="times must have ndim in "):
+        simple_gsdata.update(times=simple_gsdata.times[:, 0])
 
     with pytest.raises(ValueError, match="loads must have the same length as"):
         simple_gsdata.update(loads=("ant", "another_one"))
@@ -178,35 +182,8 @@ def test_bad_gsdata_init(simple_gsdata: GSData):
         simple_gsdata.update(loads=(38,))
 
     with pytest.raises(
-        TypeError, match="effective_integration_time must be a Quantity"
-    ):
-        simple_gsdata.update(effective_integration_time=10.0)
-
-    with pytest.raises(
-        ValueError, match="effective_integration_time must be in seconds"
-    ):
-        simple_gsdata.update(effective_integration_time=10.0 * un.MHz)
-
-    with pytest.raises(TypeError, match="auxiliary_measurements must be a dictionary"):
-        simple_gsdata.update(auxiliary_measurements=3)
-
-    with pytest.raises(
         ValueError,
-        match="If times are LSTs, auxiliary_measurements cannot be specified",
-    ):
-        simple_gsdata.update(
-            auxiliary_measurements={"hey": np.linspace(50, 100, 50)},
-            time_array=simple_gsdata.lst_array,
-        )
-
-    with pytest.raises(TypeError, match="auxiliary_measurements keys must be strings"):
-        simple_gsdata.update(auxiliary_measurements={1: np.linspace(50, 100, 50)})
-
-    with pytest.raises(TypeError, match="auxiliary_measurements values must be arrays"):
-        simple_gsdata.update(auxiliary_measurements={"hey": 3})
-
-    with pytest.raises(
-        ValueError, match="auxiliary_measurements values must have the size ntimes"
+        match="auxiliary_measurements must be length ntimes",
     ):
         simple_gsdata.update(auxiliary_measurements={"hey": np.linspace(50, 100, 75)})
 
@@ -251,7 +228,7 @@ def test_select_lsts_and_times(power_gsdata):
 
 
 def test_select_lsts(power_gsdata: GSData):
-    rng = (power_gsdata.lst_array.min().hour, power_gsdata.lst_array.max().hour)
+    rng = (power_gsdata.lsts.min().hour, power_gsdata.lsts.max().hour)
 
     new = select_lsts(power_gsdata, lst_range=rng, load="all")
     # even though they're the same, the _file_appendable is switched off now
@@ -268,14 +245,7 @@ def test_select_lsts(power_gsdata: GSData):
     # Use different order of range
     new = select_lsts(power_gsdata, lst_range=(-2, 4))
     new2 = select_lsts(power_gsdata, lst_range=(22, 4))
-    assert new == new2
-
-    # Test with both indx and range
-    new = select_lsts(power_gsdata, lst_range=rng, indx=np.arange(0, 50, 2))
-    new2 = select_lsts(power_gsdata, indx=np.arange(0, 50, 2))
-
-    flds = attrs.fields(GSData)
-    for fld in flds:
+    for fld in attrs.fields(GSData):
         v1 = getattr(new, fld.name)
         v2 = getattr(new2, fld.name)
 
@@ -283,15 +253,27 @@ def test_select_lsts(power_gsdata: GSData):
             continue
         if fld.eq_key is not None:
             if fld.eq_key(v1) != fld.eq_key(v2):
-                print(fld)
+                print(fld.name, "weird eq", v1, v2)
         elif v1 != v2:
-            print(fld)
+            print(fld.name, "normal eq")
+
+    print(
+        "EFFTIME",
+        np.all(new._effective_integration_time == new2._effective_integration_time),
+    )
+
+    assert new == new2
+
+    # Test with both indx and range
+    new = select_lsts(power_gsdata, lst_range=rng, indx=np.arange(0, 50, 2))
+    new2 = select_lsts(power_gsdata, indx=np.arange(0, 50, 2))
+
     assert new == new2
 
 
 def test_select_freqs(simple_gsdata):
     new = select_freqs(simple_gsdata, freq_range=(50 * un.MHz, 70 * un.MHz))
-    assert new.freq_array.max() <= 70 * un.MHz
+    assert new.freqs.max() <= 70 * un.MHz
 
 
 def test_add(simple_gsdata):
@@ -299,13 +281,13 @@ def test_add(simple_gsdata):
         simple_gsdata + 3
 
     new_times = simple_gsdata.update(
-        time_array=simple_gsdata.time_array + timedelta(days=1),
+        times=simple_gsdata.times + timedelta(days=1),
         time_ranges=simple_gsdata.time_ranges + 1 * un.day,
     )
 
-    new_freqs = simple_gsdata.update(freq_array=simple_gsdata.freq_array + 50 * un.MHz)
+    new_freqs = simple_gsdata.update(freqs=simple_gsdata.freqs + 50 * un.MHz)
 
-    new_timefreq = new_times.update(freq_array=new_freqs.freq_array)
+    new_timefreq = new_times.update(freqs=new_freqs.freqs)
 
     with pytest.raises(
         ValueError,
@@ -320,19 +302,6 @@ def test_add(simple_gsdata):
 def test_moon_sun(simple_gsdata: GSData):
     az, el = simple_gsdata.get_moon_azel()
     assert len(az) == len(el) == simple_gsdata.ntimes
-
-    in_lst = simple_gsdata.to_lsts()
-    with pytest.raises(
-        ValueError,
-        match="Cannot compute Moon positions when time array is not a Time object",
-    ):
-        in_lst.get_moon_azel()
-
-    with pytest.raises(
-        ValueError,
-        match="Cannot compute Sun positions when time array is not a Time object",
-    ):
-        in_lst.get_sun_azel()
 
 
 def test_cumulative_flags(simple_gsdata: GSData):
@@ -364,13 +333,27 @@ def test_cumulative_flags(simple_gsdata: GSData):
         # can't add the same flags twice
         no_flags.add_flags("zeros", flg0)
 
-    with pytest.raises(ValueError, match="Cannot multiply GSFlag objects"):
+    with pytest.raises(ValueError, match="Objects have different npols"):
         no_flags.add_flags("new", np.zeros((1, 2, 3)))
 
     with pytest.raises(ValueError, match="Cannot append to file without a filename"):
         no_flags.add_flags("time", flg1, append_to_file=True)
 
     new_no_flags = time_flags.remove_flags("time")
+
+    flds = attrs.fields(GSData)
+    for fld in flds:
+        v1 = getattr(new_no_flags, fld.name)
+        v2 = getattr(no_flags, fld.name)
+
+        if not fld.eq:
+            continue
+        if fld.eq_key is not None:
+            if fld.eq_key(v1) != fld.eq_key(v2):
+                print(fld)
+        elif v1 != v2:
+            print(fld)
+
     assert new_no_flags == no_flags
 
     with pytest.raises(ValueError, match="No flags for filter"):
@@ -382,11 +365,6 @@ def test_initial_yearday(simple_gsdata):
 
     with pytest.raises(ValueError, match="Cannot return minutes without hours"):
         simple_gsdata.get_initial_yearday(minutes=True)
-
-    lst = simple_gsdata.to_lsts()
-
-    with pytest.raises(ValueError, match="Cannot represent times as year-days"):
-        lst.get_initial_yearday()
 
 
 def test_iterators(simple_gsdata):

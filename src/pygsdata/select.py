@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 import warnings
-from typing import Union
 
 import numpy as np
 from astropy import units as un
@@ -14,13 +13,9 @@ from astropy.time import Time
 from .coordinates import lst2gha
 from .gsdata import GSData
 from .register import gsregister
+from .types import FreqRangeType, FreqType, LSTRangeType
 
 logger = logging.getLogger(__name__)
-
-FreqType = un.Quantity[un.MHz]
-FreqRangeType = tuple[FreqType, FreqType]
-LSTType = Union[un.Quantity[un.hourangle], Longitude]
-LSTRangeType = tuple[LSTType, LSTType]
 
 
 def freq_selector(
@@ -58,11 +53,11 @@ def select_freqs(
     **kwargs,
 ) -> GSData:
     """Select a subset of the frequency channels."""
-    mask = freq_selector(data.freq_array, freq_range=freq_range, indx=indx)
+    mask = freq_selector(data.freqs, freq_range=freq_range, indx=indx)
 
     return data.update(
         data=data.data[..., mask],
-        freq_array=data.freq_array[mask],
+        freqs=data.freqs[mask],
         nsamples=data.nsamples[..., mask],
         flags={k: v.select(idx=mask, axis="freq") for k, v in data.flags.items()},
     )
@@ -74,14 +69,17 @@ def _mask_times(data: GSData, mask: np.ndarray) -> GSData:
 
     return data.update(
         data=data.data[:, :, mask],
-        time_array=data.time_array[mask],
+        times=data.times[mask],
         time_ranges=data.time_ranges[mask],
-        auxiliary_measurements={
-            k: v[mask] for k, v in data.auxiliary_measurements.items()
-        },
+        auxiliary_measurements=data.auxiliary_measurements[mask]
+        if data.auxiliary_measurements is not None
+        else None,
         nsamples=data.nsamples[:, :, mask],
         flags={k: v.select(idx=mask, axis="time") for k, v in data.flags.items()},
         residuals=data.residuals[:, :, mask] if data.residuals is not None else None,
+        effective_integration_time=data.effective_integration_time[:, :, mask],
+        lsts=data.lsts[mask],
+        lst_ranges=data.lst_ranges[mask],
     )
 
 
@@ -203,9 +201,6 @@ def select_times(
     **kwargs,
 ) -> GSData:
     """Select a subset of the times."""
-    if data.in_lst:
-        raise ValueError("LST-binned data cannot be selected on times.")
-
     if "range" in kwargs:
         warnings.warn(
             "The 'range' keyword is deprecated, use 'time_range' instead.", stacklevel=2
@@ -216,7 +211,7 @@ def select_times(
         raise ValueError(f"Unknown keyword arguments: {kwargs}")
 
     mask = time_selector(
-        data.time_array,
+        data.times,
         data.loads,
         time_range=time_range,
         fmt=fmt,
@@ -241,7 +236,7 @@ def select_lsts(
         raise ValueError(f"Unknown keyword arguments: {kwargs}")
 
     mask = lst_selector(
-        data.lst_array, data.loads, lst_range=lst_range, indx=indx, load=load, gha=gha
+        data.lsts, data.loads, lst_range=lst_range, indx=indx, load=load, gha=gha
     )
 
     return _mask_times(data, mask)

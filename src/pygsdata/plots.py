@@ -71,14 +71,14 @@ def plot_waterfall(
     else:
         cmap = imshow_kwargs.pop("cmap", "magma")
 
-    times = data.time_array
+    times = data.times
 
     img = ax.imshow(
         q,
         origin="lower",
         extent=(
-            data.freq_array.min().to_value("MHz"),
-            data.freq_array.max().to_value("MHz"),
+            data.freqs.min().to_value("MHz"),
+            data.freqs.max().to_value("MHz"),
             0,
             (
                 (times.max() - times.min()).hour
@@ -101,7 +101,7 @@ def plot_waterfall(
             ax.set_ylabel("Hours into Observation")
 
     if title and not isinstance(title, str) and not data.in_lst:
-        ax.set_title(f"{data.get_initial_yearday()}. LST0={data.lst_array[0][0]:.2f}")
+        ax.set_title(f"{data.get_initial_yearday()}. LST0={data.lsts[0][0]:.2f}")
 
     if cbar:
         cb = plt.colorbar(img, ax=ax)

@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import contextlib
 import datetime
+from importlib.metadata import PackageNotFoundError, version
 
 import yaml
 from attrs import asdict, define, evolve, field
 from attrs import validators as vld
 from hickleable import hickleable
-from pkg_resources import get_distribution
 
 
 @hickleable()
@@ -59,8 +59,8 @@ class Stamp:
             "astropy",
             "pygsdata",
         ):
-            with contextlib.suppress(Exception):
-                out[pkg] = get_distribution(__name__).version
+            with contextlib.suppress(PackageNotFoundError):
+                out[pkg] = version(pkg)
         return out
 
     def _to_yaml_dict(self):
