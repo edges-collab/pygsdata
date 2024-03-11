@@ -72,7 +72,6 @@ def mockgsd(
     skydata = data_creator(freqs, lsts, dshape)
     nsamples = nsample_creator(freqs, lsts, shape)
     flags = {key: creator(shape) for key, creator in flag_creators.items()}
-    print({k: (v.flags.shape, v.axes) for k, v in flags.items()})
 
     if noise_level > 0:
         rng = np.random.default_rng()
@@ -81,7 +80,7 @@ def mockgsd(
     if as_power:
         p_load = 10 * np.ones_like(skydata)
         p_load_ns = 100 * np.ones_like(skydata)
-        np.concatenate((skydata, p_load, p_load_ns), axis=0)
+        skydata = np.concatenate((skydata, p_load, p_load_ns), axis=0)
         times = Time(
             np.hstack(
                 (

@@ -9,6 +9,7 @@ from pathlib import Path
 
 import attrs
 import h5py
+import numpy as np
 from astropy import units as un
 from astropy.coordinates import Angle, EarthLocation
 from attrs import field
@@ -84,11 +85,11 @@ class Telescope:
 
     @integration_time.validator
     def _integration_time_vld(self, _, value):
-        if value.value <= 0:
-            raise ValueError("Integration time must be positive")
-
         if value.size != 1:
             raise ValueError("Integration time must be a scalar")
+
+        if value.value <= 0:
+            raise ValueError("Integration time must be positive")
 
     def write(self, fname: str | Path | h5py.File | h5py.Group):
         """Write the telescope to an HDF5 file."""
@@ -106,8 +107,12 @@ class Telescope:
             grp.attrs["name"] = self.name
             grp.attrs["integration_time"] = self.integration_time.to(un.s).value
             grp.attrs["x_orientation"] = self.x_orientation.to(un.deg).value
-            grp["location"] = self.location.to_geodetic()
+            grp["location"] = np.array(
+                [x.to_value("m") for x in self.location.to_geocentric()]
+            )
             grp["pols"] = self.pols
+        else:
+            raise TypeError(f"Invalid type for fname: {type(fname)}")
 
     @classmethod
     def from_hdf5(cls, fname: str | Path | h5py.File | h5py.Group) -> Self:
@@ -134,8 +139,8 @@ class Telescope:
     def _read_hdf5_version_1(cls, grp: h5py.Group):
         return cls(
             name=grp.attrs["name"],
-            location=EarthLocation.from_geodetic(*grp["location"][()]),
-            pols=grp["pols"][:],
+            location=EarthLocation.from_geocentric(*(grp["location"][()] * un.m)),
+            pols=tuple(x.decode() for x in grp["pols"][:]),
             integration_time=grp.attrs["integration_time"] * un.s,
             x_orientation=grp.attrs["x_orientation"] * un.deg,
         )

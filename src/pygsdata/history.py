@@ -11,6 +11,11 @@ from attrs import asdict, define, evolve, field
 from attrs import validators as vld
 from hickleable import hickleable
 
+try:
+    from typing import Self
+except ImportError:
+    from typing_extensions import Self
+
 
 @hickleable()
 @define(frozen=True, slots=False)
@@ -169,14 +174,21 @@ class History:
         d = yaml.load(repr_string, Loader=yaml.FullLoader)
         return cls(stamps=[Stamp.from_yaml_dict(s) for s in d])
 
-    def add(self, stamp: Stamp | dict):
+    def add(self, stamp: Stamp | dict | tuple[Stamp] | tuple[dict] | Self):
         """Add a stamp to the history."""
         if isinstance(stamp, dict):
-            stamp = Stamp(**stamp)
-        if not isinstance(stamp, Stamp):
-            raise TypeError("stamp must be a Stamp or a dictionary")
+            stamp = (Stamp(**stamp),)
 
-        return evolve(self, stamps=(*self.stamps, stamp))
+        if isinstance(stamp, Stamp):
+            return evolve(self, stamps=(*self.stamps, stamp))
+
+        if all(isinstance(s, (Stamp, dict)) for s in stamp):
+            a = self
+            for s in stamp:
+                a = a.add(s)
+            return a
+
+        raise TypeError("stamp must be a Stamp or a dictionary")
 
     def __len__(self):
         """Return the number of stamps."""

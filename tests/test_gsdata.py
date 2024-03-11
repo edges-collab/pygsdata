@@ -245,22 +245,6 @@ def test_select_lsts(power_gsdata: GSData):
     # Use different order of range
     new = select_lsts(power_gsdata, lst_range=(-2, 4))
     new2 = select_lsts(power_gsdata, lst_range=(22, 4))
-    for fld in attrs.fields(GSData):
-        v1 = getattr(new, fld.name)
-        v2 = getattr(new2, fld.name)
-
-        if not fld.eq:
-            continue
-        if fld.eq_key is not None:
-            if fld.eq_key(v1) != fld.eq_key(v2):
-                print(fld.name, "weird eq", v1, v2)
-        elif v1 != v2:
-            print(fld.name, "normal eq")
-
-    print(
-        "EFFTIME",
-        np.all(new._effective_integration_time == new2._effective_integration_time),
-    )
 
     assert new == new2
 

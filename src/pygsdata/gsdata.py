@@ -125,7 +125,7 @@ class GSData:
     lsts: Longitude = lstfield(possible_ndims=(2,))
     lst_ranges: Longitude = lstfield(possible_ndims=(3,))
 
-    filename: Path | None = field(default=None, converter=cnv.optional(Path))
+    filename: Path | None = field(default=None, converter=cnv.optional(Path), eq=False)
     _file_appendable: bool = field(default=True, converter=bool)
     name: str = field(default="", converter=str)
 
@@ -372,7 +372,7 @@ class GSData:
 
             return data
 
-        filename = [filename] if isinstance(filename, str) else filename
+        filename = [filename] if isinstance(filename, (str, Path)) else filename
         datas = [_from_file(pth, reader) for pth in filename]
 
         if len(datas) == 1:
@@ -392,9 +392,12 @@ class GSData:
             fl.attrs["version"] = "2.0"
 
             meta = fl.create_group("metadata")
-            self.telescope.write(meta["telescope"])
+            self.telescope.write(meta.create_group("telescope"))
             meta["freqs"] = self.freqs.to_value("MHz")
             meta["freqs"].attrs["unit"] = "MHz"
+            meta[
+                "effective_integration_time"
+            ] = self._effective_integration_time.to_value("s")
 
             meta["times"] = self.times.jd
             meta["lsts"] = self.lsts.hour

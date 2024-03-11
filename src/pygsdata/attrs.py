@@ -89,7 +89,7 @@ def _cmp_num_array(x, y):
     elif x is None or y is None:
         return False
     else:
-        return x.shape == y.shape and np.allclose(x, y)
+        return (x.shape == y.shape or x.size == 1 or y.size == 1) and np.allclose(x, y)
 
 
 def npfield(
