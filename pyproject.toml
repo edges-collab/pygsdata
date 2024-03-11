@@ -32,7 +32,6 @@ dependencies = [
     "attrs",
     "matplotlib",
     "hickleable",
-    "read_acq",
     "h5py",
     "typing_extensions",
     "pytz",
