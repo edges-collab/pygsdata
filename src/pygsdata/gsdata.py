@@ -9,6 +9,7 @@ key methods for data selection, I/O, and analysis.
 from __future__ import annotations
 
 import logging
+import warnings
 from collections.abc import Iterable
 from functools import cached_property
 from pathlib import Path
@@ -451,11 +452,27 @@ class GSData:
         if self.data.shape != other.data.shape:
             raise ValueError("Cannot add GSData objects with different shapes")
 
-        if self.auxiliary_measurements or other.auxiliary_measurements:
-            raise ValueError("Cannot add GSData objects with auxiliary measurements")
-
         if not np.allclose(self.freqs, other.freqs):
             raise ValueError("Cannot add GSData objects with different frequencies")
+
+        if self.auxiliary_measurements and not other.auxiliary_measurements:
+            aux = self.auxiliary_measurements
+        elif not self.auxiliary_measurements and other.auxiliary_measurements:
+            aux = other.auxiliary_measurements
+        elif self.auxiliary_measurements:
+            aux = dict(other.auxiliary_measurements.items())
+            aux.update(self.auxiliary_measurements)
+            aux = QTable(aux)
+            if any(
+                k in other.auxiliary_measurements for k in self.auxiliary_measurements
+            ):
+                warnings.warn(
+                    "Overlapping auxiliary measurements exist between objects,"
+                    " the ones in the first object will be retained.",
+                    stacklevel=2,
+                )
+        else:
+            aux = None
 
         if not np.allclose(self.times.jd, other.times.jd):
             raise ValueError("Cannot add GSData objects with different times")
@@ -466,7 +483,7 @@ class GSData:
         d1 = np.ma.masked_array(self.data, mask=self.complete_flags)
         d2 = np.ma.masked_array(other.data, mask=other.complete_flags)
 
-        mean = (self.flagged_nsamples * d1 + other.flagged_nsamples * d2) / nsamples
+        mean = self.flagged_nsamples * d1 + other.flagged_nsamples * d2
 
         if self.residuals is not None and other.residuals is not None:
             r1 = np.ma.masked_array(self.residuals, mask=self.complete_flags)
@@ -483,6 +500,7 @@ class GSData:
             residuals=resids,
             nsamples=nsamples,
             flags={"summed_flags": total_flags},
+            auxiliary_measurements=aux,
         )
 
     @cached_property

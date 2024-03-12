@@ -8,51 +8,15 @@ import pytest
 from astropy import units as un
 from astropy.time import Time
 from pygsdata import (
-    KNOWN_TELESCOPES,
     GSData,
     GSFlag,
     History,
     Stamp,
-    Telescope,
     gsregister,
     select_freqs,
     select_lsts,
     select_times,
 )
-
-
-@pytest.fixture(scope="module")
-def edges() -> Telescope:
-    return KNOWN_TELESCOPES["edges-low"]
-
-
-@pytest.fixture(scope="module")
-def simple_gsdata(edges):
-    return GSData(
-        data=np.zeros((1, 1, 50, 100)),
-        freqs=np.linspace(50, 100, 100) * un.MHz,
-        times=Time(np.linspace(2459811, 2459812, 50)[:, np.newaxis], format="jd"),
-        telescope=edges,
-    )
-
-
-@pytest.fixture(scope="module")
-def power_gsdata(edges):
-    return GSData(
-        data=np.zeros((3, 1, 50, 100)),
-        freqs=np.linspace(50, 100, 100) * un.MHz,
-        times=Time(
-            np.array(
-                [
-                    np.linspace(2459811, 2459812, 50),
-                    np.linspace(2459811.001, 2459812.001, 50),
-                    np.linspace(2459811.002, 2459812.002, 50),
-                ]
-            ).T,
-            format="jd",
-        ),
-        telescope=edges,
-    )
 
 
 def test_default_power_load_names(power_gsdata):
@@ -215,7 +179,7 @@ def test_update_history(simple_gsdata):
 
 
 def test_select_lsts_and_times(power_gsdata):
-    indx = np.zeros(50, dtype=bool)
+    indx = np.zeros(power_gsdata.ntimes, dtype=bool)
     indx[::2] = True
 
     lst = select_lsts(power_gsdata, indx=indx)
@@ -237,7 +201,7 @@ def test_select_lsts(power_gsdata: GSData):
 
     new = select_lsts(power_gsdata, lst_range=rng, load="ant")
     assert new != power_gsdata
-    assert np.allclose(new.data, power_gsdata.data[0])
+    assert np.allclose(new.data, power_gsdata.data)
 
     with pytest.raises(ValueError, match="range must be a length-2 tuple"):
         select_lsts(power_gsdata, lst_range=[0, 2, 3])
@@ -318,7 +282,7 @@ def test_cumulative_flags(simple_gsdata: GSData):
         no_flags.add_flags("zeros", flg0)
 
     with pytest.raises(ValueError, match="Objects have different npols"):
-        no_flags.add_flags("new", np.zeros((1, 2, 3)))
+        no_flags.add_flags("new", np.zeros((1, 2, 3, 4)))
 
     with pytest.raises(ValueError, match="Cannot append to file without a filename"):
         no_flags.add_flags("time", flg1, append_to_file=True)
@@ -345,7 +309,7 @@ def test_cumulative_flags(simple_gsdata: GSData):
 
 
 def test_initial_yearday(simple_gsdata):
-    assert simple_gsdata.get_initial_yearday() == "2022:231"
+    assert simple_gsdata.get_initial_yearday() == "2022:320"
 
     with pytest.raises(ValueError, match="Cannot return minutes without hours"):
         simple_gsdata.get_initial_yearday(minutes=True)
