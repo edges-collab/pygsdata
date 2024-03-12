@@ -9,6 +9,8 @@ from astropy import coordinates as apc
 from astropy import time as apt
 from astropy import units as apu
 
+from . import constants as const
+
 
 def moon_azel(times: apt.Time, obs_location: apc.EarthLocation) -> np.ndarray:
     """Get local coordinates of the Sun using Astropy."""
@@ -20,6 +22,18 @@ def sun_azel(times: apt.Time, obs_location: apc.EarthLocation) -> np.ndarray:
     """Get local coordinates of the Sun using Astropy."""
     sun = apc.get_moon(times).transform_to(apc.AltAz(location=obs_location))
     return sun.az.deg, sun.alt.deg
+
+
+def lst2gha(lst: float | np.ndarray) -> float | np.ndarray:
+    """Convert LST to GHA."""
+    gha = lst - const.galactic_centre_lst
+    return gha % 24
+
+
+def gha2lst(gha: float | np.ndarray) -> float | np.ndarray:
+    """Convert GHA to LST."""
+    lst = gha + const.galactic_centre_lst
+    return lst % 24
 
 
 def lst_to_earth_time(time: apt.Time) -> float:
