@@ -74,9 +74,6 @@ jobs:
           git clone https://github.com/edges-collab/${{ matrix.package }}
           cd ${{ matrix.package }}
           pip install .[dev]
-      # - name: Install ipykernel
-      #   if: matrix.package == 'edges-cal'
-      #   run: python -m ipykernel install --user --name edges --display-name "edges"
 
       - name: Run Tests
         run: |
