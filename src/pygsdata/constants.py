@@ -14,3 +14,5 @@ KNOWN_TELESCOPES = {
         x_orientation=0.0 * apu.deg,
     )
 }
+
+galactic_centre_lst = 17.76111111111111 * apu.hourangle  # hours

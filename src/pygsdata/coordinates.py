@@ -2,14 +2,13 @@
 
 from __future__ import annotations
 
-import datetime as dt
-
 import numpy as np
 from astropy import coordinates as apc
 from astropy import time as apt
 from astropy import units as apu
 
 from . import constants as const
+from .types import AngleType
 
 
 def moon_azel(times: apt.Time, obs_location: apc.EarthLocation) -> np.ndarray:
@@ -24,29 +23,27 @@ def sun_azel(times: apt.Time, obs_location: apc.EarthLocation) -> np.ndarray:
     return sun.az.deg, sun.alt.deg
 
 
-def lst2gha(lst: float | np.ndarray) -> float | np.ndarray:
+def lst2gha(lst: AngleType) -> AngleType:
     """Convert LST to GHA."""
-    gha = lst - const.galactic_centre_lst
-    return gha % 24
+    return (lst - const.galactic_centre_lst) % apu.Quantity(24, "hourangle")
 
 
-def gha2lst(gha: float | np.ndarray) -> float | np.ndarray:
+def gha2lst(gha: AngleType) -> AngleType:
     """Convert GHA to LST."""
-    lst = gha + const.galactic_centre_lst
-    return lst % 24
+    return (gha + const.galactic_centre_lst) % apu.Quantity(24, "hourangle")
 
 
 def lst_to_earth_time(time: apt.Time) -> float:
     """Return a factor to convert one second of earth-measured time to an LST."""
-    time2 = time + dt.timedelta(seconds=1)
+    time2 = time + apt.TimeDelta(1 * apu.s)
     lst = time.sidereal_time("apparent")
     lst2 = time2.sidereal_time("apparent")
     return (lst2.arcsecond - lst.arcsecond) / 15
 
 
 def lsts_to_times(
-    lsts: np.typing.ArrayLike, ref_time: apt.Time, location: apc.EarthLocation
-) -> list[apt.Time]:
+    lsts: AngleType, ref_time: apt.Time, location: apc.EarthLocation
+) -> apt.Time:
     """Convert a list of LSTs to local times at a particular location.
 
     The times are generated close to (surrounding) a particular time.
@@ -66,9 +63,6 @@ def lsts_to_times(
     ref_time.location = location
     ref_lst = ref_time.sidereal_time("apparent")
     lst_per_sec = lst_to_earth_time(ref_time)
-    times = []
-    for this_lst in lsts:
-        lst_diff = apc.Longitude(this_lst * apu.hour) - ref_lst
-        sec_diff = apt.TimeDelta(lst_diff.arcsecond / 15 / lst_per_sec, format="sec")
-        times.append(ref_time + sec_diff)
-    return times
+    lst_diff = lsts - ref_lst
+    sec_diff = apt.TimeDelta(lst_diff.arcsecond / 15 / lst_per_sec, format="sec")
+    return ref_time + sec_diff

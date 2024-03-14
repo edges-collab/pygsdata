@@ -110,7 +110,7 @@ class _GSH5Readers:
         auxiliary_measurements = {
             name: fl["auxiliary_measurements"][name][:]
             for name in fl["auxiliary_measurements"]
-        }
+        } or None
 
         dgrp = fl["data"]
         data = dgrp["data"][load_mask][:, :, time_mask][..., freq_mask]
@@ -124,7 +124,7 @@ class _GSH5Readers:
         if "names" in flg_grp.attrs:
             flag_keys = flg_grp.attrs["names"]
             for name in flag_keys:
-                flags[name] = hickle.load(fl, f"/flags/{name}")
+                flags[name] = hickle.load(fl, f"data/flags/{name}")
 
                 if "load" in flags[name].axes and not np.all(load_mask):
                     flags[name] = flags[name].select(idx=load_mask, axis="load")
@@ -136,7 +136,7 @@ class _GSH5Readers:
         history = History.from_repr(meta.attrs["history"])
 
         residuals = (
-            dgrp["residuals"][load_mask, :, time_mask, freq_mask]
+            dgrp["residuals"][load_mask][:, :, time_mask][..., freq_mask]
             if "residuals" in dgrp
             else None
         )

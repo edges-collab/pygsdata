@@ -423,8 +423,9 @@ class GSData:
 
             # Now aux measurements
             aux_grp = fl.create_group("auxiliary_measurements")
-            for name, meas in self.auxiliary_measurements.items():
-                aux_grp[name] = meas
+            if self.auxiliary_measurements is not None:
+                for name, meas in self.auxiliary_measurements.items():
+                    aux_grp[name] = meas
 
         return self.update(filename=filename)
 
@@ -506,7 +507,7 @@ class GSData:
     @cached_property
     def gha(self) -> np.ndarray:
         """The GHA's of the observations."""
-        return Longitude(crd.lst2gha(self.lsts.hour) * un.hourangle)
+        return crd.lst2gha(self.lsts)
 
     def get_moon_azel(self) -> tuple[np.ndarray, np.ndarray]:
         """Get the Moon's azimuth and elevation for each time in deg."""
