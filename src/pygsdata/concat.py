@@ -61,6 +61,9 @@ def concat(
         kw["time_ranges"] = time_concat([d.time_ranges for d in data], axis=0)
         kw["lst_ranges"] = np.concatenate([d.lst_ranges for d in data], axis=0)
         kw["auxiliary_measurements"] = vstack([d.auxiliary_measurements for d in data])
+        kw["effective_integration_time"] = np.concatenate(
+            [d.effective_integration_time for d in data], axis=-1
+        )
     elif axis == "freq":
         kw["freqs"] = np.concatenate([d.freqs for d in data])
     elif axis == "load":
@@ -69,6 +72,9 @@ def concat(
         kw["time_ranges"] = time_concat([d.time_ranges for d in data], axis=1)
         kw["lsts"] = np.concatenate([d.lsts for d in data], axis=1)
         kw["lst_ranges"] = np.concatenate([d.lst_ranges for d in data], axis=1)
+        kw["effective_integration_time"] = np.concatenate(
+            [d.effective_integration_time for d in data], axis=0
+        )
     elif axis == "pol":
         kw["pols"] = functools.reduce(operator.iadd, (list(d.pols) for d in data), [])
 
