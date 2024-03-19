@@ -103,8 +103,8 @@ def plot_waterfall(
     v2 = ax.secondary_yaxis("right", functions=(jd2lst, lst2jd))
     v2.set_ylabel("LST [hour]")
 
-    if title and not isinstance(title, str) and not data.in_lst:
-        ax.set_title(f"{data.get_initial_yearday()}. LST0={data.lst_array[0][0]:.2f}")
+    if title and not isinstance(title, str):
+        ax.set_title(f"{data.get_initial_yearday()}")
     if title and isinstance(title, str):
         ax.set_title(title)
 
