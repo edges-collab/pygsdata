@@ -104,7 +104,7 @@ def plot_waterfall(
     v2 = ax.secondary_yaxis("right", functions=(jd2lst, lst2jd))
     v2.set_ylabel("LST [hour]")
     orig_labels = v2.get_yticklabels()
-    for i, label in orig_labels:
+    for i, label in enumerate(orig_labels):
         if float(label) > 24.0:
             orig_labels[i] = str(float(label) - 24.0)
     v2.set_yticklabels(orig_labels)
