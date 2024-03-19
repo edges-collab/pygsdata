@@ -94,14 +94,19 @@ def plot_waterfall(
     if ylab:
         ax.set_ylabel("JD")
 
-    spl_jd2lst = Spline(data.times.jd[:, 0], data.lsts.hour[:, 0])
-    spl_lst2jd = Spline(data.lsts.hour[:, 0], data.times.jd[:, 0])
+    lsth = data.lsts.hour[:, 0].copy()
+    lsth[lsth < lsth[0]] += 24.0
+    spl_jd2lst = Spline(data.times.jd[:, 0], lsth)
+    spl_lst2jd = Spline(lsth, data.times.jd[:, 0])
 
     def jd2lst(jd):
         return spl_jd2lst(jd) % 24
 
     def lst2jd(lst):
-        return spl_lst2jd(lst % 24)
+        if lst < lsth[0]:
+            return spl_lst2jd(lst + 24)
+        else:
+            return spl_lst2jd(lst)
 
     v2 = ax.secondary_yaxis("right", functions=(jd2lst, lst2jd))
     v2.set_ylabel("LST [hour]")
