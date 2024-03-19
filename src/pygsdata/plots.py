@@ -66,7 +66,7 @@ def plot_waterfall(
     if ax is None:
         ax = plt.subplots(1, 1)[1]
 
-    if attribute == "resids":
+    if attribute == "residuals":
         cmap = imshow_kwargs.pop("cmap", "coolwarm")
     else:
         cmap = imshow_kwargs.pop("cmap", "magma")
@@ -79,12 +79,8 @@ def plot_waterfall(
         extent=(
             data.freqs.min().to_value("MHz"),
             data.freqs.max().to_value("MHz"),
-            0,
-            (
-                (times.max() - times.min()).hour
-                if data.in_lst
-                else (times.max() - times.min()).to_value("hour")
-            ),
+            times.jd.min(),
+            times.jd.max(),
         ),
         cmap=cmap,
         aspect="auto",
@@ -95,13 +91,22 @@ def plot_waterfall(
     if xlab:
         ax.set_xlabel("Frequency [MHz]")
     if ylab:
-        if data.in_lst:
-            ax.set_ylabel("LST")
-        else:
-            ax.set_ylabel("Hours into Observation")
+        ax.set_ylabel("JD")
+
+    def jd2lst(jd):
+        return data.telescope.location.sidereal_time(jd).hour
+
+    def lst2jd(lst):
+        dlst = lst - data.lsts[0].hour
+        return data.times.jd[0] + dlst / 24.0
+
+    v2 = ax.secondary_yaxis("right", functions=(jd2lst, lst2jd))
+    v2.set_ylabel("LST [hour]")
 
     if title and not isinstance(title, str) and not data.in_lst:
-        ax.set_title(f"{data.get_initial_yearday()}. LST0={data.lsts[0][0]:.2f}")
+        ax.set_title(f"{data.get_initial_yearday()}. LST0={data.lst_array[0][0]:.2f}")
+    if title and isinstance(title, str):
+        ax.set_title(title)
 
     if cbar:
         cb = plt.colorbar(img, ax=ax)
