@@ -56,9 +56,10 @@ def angle_centre(a: Angle, b: Angle, p: float = 0.5):
     if p < 0 or p > 1:
         raise ValueError("p must be between 0 and 1")
 
-    if np.isscalar(bhr) and bhr < ahr:
-        bhr += 24.0
-    elif bhr < ahr:
+    if np.isscalar(bhr):
+        if bhr < ahr:
+            bhr += 24.0
+    else:
         bhr[bhr < ahr] += 24.0
 
     return kls((ahr * (1 - p) + bhr * p) << un.hourangle)
