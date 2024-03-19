@@ -93,7 +93,7 @@ def plot_waterfall(
     if ylab:
         ax.set_ylabel("JD")
 
-    dlst = data.times.jd[:, 0] * 24.0 - data.lsts.hourangle[:, 0]
+    dlst = data.times.jd[0, 0] * 24.0 - data.lsts.hourangle[0, 0]
 
     def jd2lst(jd):
         return (jd * 24 - dlst) % 24  # spl_jd2lst(jd) % 24
