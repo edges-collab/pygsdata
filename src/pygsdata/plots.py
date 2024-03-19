@@ -96,13 +96,18 @@ def plot_waterfall(
     dlst = data.times.jd[0, 0] * 24.0 - data.lsts.hourangle[0, 0]
 
     def jd2lst(jd):
-        return (jd * 24 - dlst) % 24  # spl_jd2lst(jd) % 24
+        return jd * 24 - dlst  # spl_jd2lst(jd) % 24
 
     def lst2jd(lst):
         return lst + dlst
 
     v2 = ax.secondary_yaxis("right", functions=(jd2lst, lst2jd))
     v2.set_ylabel("LST [hour]")
+    orig_labels = v2.get_yticklabels()
+    for i, label in orig_labels:
+        if float(label) > 24.0:
+            orig_labels[i] = str(float(label) - 24.0)
+    v2.set_yticklabels(orig_labels)
 
     if title and not isinstance(title, str):
         ax.set_title(f"{data.get_initial_yearday()}")
