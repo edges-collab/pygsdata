@@ -110,7 +110,6 @@ def plot_waterfall(
     if title and isinstance(title, str):
         ax.set_title(title)
 
-    if cbar:
-        cb = plt.colorbar(img, ax=ax, pad=0.1)
+    cb = plt.colorbar(img, ax=ax, pad=0.1) if cbar else None
 
     return ax, cb
