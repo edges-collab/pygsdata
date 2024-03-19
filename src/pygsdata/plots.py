@@ -64,7 +64,7 @@ def plot_waterfall(
     q = q[load, pol, :, :]
 
     if ax is None:
-        ax = plt.subplots(1, 1)[1]
+        ax = plt.subplots(1, 1, layout="constrained")[1]
 
     if attribute == "residuals":
         cmap = imshow_kwargs.pop("cmap", "coolwarm")
@@ -111,6 +111,6 @@ def plot_waterfall(
         ax.set_title(title)
 
     if cbar:
-        cb = plt.colorbar(img, ax=v2)
+        cb = plt.colorbar(img, ax=ax, pad=0.1)
 
     return ax, cb
