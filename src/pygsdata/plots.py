@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.interpolate import InterpolatedUnivariateSpline as Spline
 
 from .gsdata import GSData
 
@@ -94,17 +93,13 @@ def plot_waterfall(
     if ylab:
         ax.set_ylabel("JD")
 
-    lsth = data.lsts.hour[:, 0].copy()
-    lsth[lsth < lsth[0]] += 24.0
-    spl_jd2lst = Spline(data.times.jd[:, 0], lsth)
-    spl_lst2jd = Spline(lsth, data.times.jd[:, 0])
+    dlst = data.times.jd[:, 0] * 24.0 - data.lsts.hourangle[:, 0]
 
     def jd2lst(jd):
-        return spl_jd2lst(jd) % 24
+        return (jd * 24 - dlst) % 24  # spl_jd2lst(jd) % 24
 
     def lst2jd(lst):
-        lst[lst < lsth[0]] += 24
-        return spl_lst2jd(lst)
+        return lst + dlst
 
     v2 = ax.secondary_yaxis("right", functions=(jd2lst, lst2jd))
     v2.set_ylabel("LST [hour]")
@@ -116,6 +111,5 @@ def plot_waterfall(
 
     if cbar:
         cb = plt.colorbar(img, ax=ax)
-        cb.set_label(data.loads[load])
 
-    return ax
+    return ax, cb
