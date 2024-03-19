@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy.interpolate import InterpolatedUnivariateSpline as Spline
 
 from .gsdata import GSData
 
@@ -93,12 +94,14 @@ def plot_waterfall(
     if ylab:
         ax.set_ylabel("JD")
 
+    spl_jd2lst = Spline(data.times.jd[:, 0], data.lsts.hour[:, 0])
+    spl_lst2jd = Spline(data.lsts.hour[:, 0], data.times.jd[:, 0])
+
     def jd2lst(jd):
-        return data.telescope.location.sidereal_time(jd).hour
+        return spl_jd2lst(jd) % 24
 
     def lst2jd(lst):
-        dlst = lst - data.lsts[0].hour
-        return data.times.jd[0] + dlst / 24.0
+        return spl_lst2jd(lst % 24)
 
     v2 = ax.secondary_yaxis("right", functions=(jd2lst, lst2jd))
     v2.set_ylabel("LST [hour]")
