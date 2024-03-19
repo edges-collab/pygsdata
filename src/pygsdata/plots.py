@@ -103,10 +103,8 @@ def plot_waterfall(
         return spl_jd2lst(jd) % 24
 
     def lst2jd(lst):
-        if lst < lsth[0]:
-            return spl_lst2jd(lst + 24)
-        else:
-            return spl_lst2jd(lst)
+        lst[lst < lsth[0]] += 24
+        return spl_lst2jd(lst)
 
     v2 = ax.secondary_yaxis("right", functions=(jd2lst, lst2jd))
     v2.set_ylabel("LST [hour]")
