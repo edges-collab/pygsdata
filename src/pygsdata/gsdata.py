@@ -619,7 +619,7 @@ class GSData:
                     # Can't append to file because it would be inconsistent.
                     return new
 
-                flg_grp = fl["flags"]
+                flg_grp = fl["data"]["flags"]
 
                 names_in_file = flg_grp.attrs.get("names", ())
 
