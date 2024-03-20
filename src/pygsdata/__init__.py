@@ -1,28 +1,31 @@
 """An interface for 21cm Global Signal Data."""
 
-from pkg_resources import DistributionNotFound, get_distribution
+from importlib.metadata import PackageNotFoundError, version
 
 try:
-    __version__ = get_distribution(__name__).version
-except DistributionNotFound:
+    __version__ = version("pygsdata")
+except PackageNotFoundError:
+    # package is not installed
     __version__ = "unknown"
-finally:
-    del get_distribution, DistributionNotFound
 
 __all__ = [
+    "GSDATA_PROCESSORS",
     "GSData",
     "GSFlag",
     "History",
     "Stamp",
-    "GSDATA_PROCESSORS",
     "gsregister",
     "select_freqs",
     "select_lsts",
     "select_times",
+    "KNOWN_TELESCOPES",
+    "Telescope",
 ]
 
+from .constants import KNOWN_TELESCOPES
 from .gsdata import GSData
 from .gsflag import GSFlag
 from .history import History, Stamp
 from .register import GSDATA_PROCESSORS, gsregister
 from .select import select_freqs, select_lsts, select_times
+from .telescope import Telescope

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from functools import cached_property
 from pathlib import Path
 from typing import Protocol
@@ -42,7 +43,7 @@ class GSFlag:
     axes
         A tuple of strings specifying the axes of the data array. The possible axes are
         "load", "pol", "time", and "freq". They must be in that order, but not all
-        must be present.
+        must be present, only as many as flags has dimensions.
     history
         A tuple of dictionaries, each of which is a record of a previous processing
         step.
@@ -67,16 +68,22 @@ class GSFlag:
 
     @axes.validator
     def _axes_vld(self, _, value):
-        if not len(set(value)) == len(value):
+        if len(set(value)) != len(value):
             raise ValueError(f"Axes must be unique, got {value}")
 
-        if not all(ax in ("load", "pol", "time", "freq") for ax in value):
+        if len(value) != self.flags.ndim:
+            raise ValueError(
+                f"Number of axes must match number of dimensions in flags. "
+                f"Got {len(value)} axes and {self.flags.ndim} dimensions"
+            )
+
+        if any(ax not in self._axes for ax in value):
             raise ValueError("Axes must be a subset of load, pol, time, freq")
 
-        idx = [value.index(ax) for ax in ("load", "pol", "time", "freq") if ax in value]
+        idx = [value.index(ax) for ax in self._axes if ax in value]
 
-        if not idx == sorted(idx):
-            raise ValueError("Axes must be in order load, pol, time, freq")
+        if idx != sorted(idx):
+            raise ValueError(f"Axes must be in order {self._axes}")
 
     @axes.default
     def _axes_default(self):
@@ -98,9 +105,7 @@ class GSFlag:
     @cached_property
     def nloads(self) -> int | None:
         """The number of loads."""
-        if "load" not in self.axes:
-            return None
-        return self.flags.shape[0]
+        return None if "load" not in self.axes else self.flags.shape[0]
 
     @property
     def ntimes(self) -> int | None:
@@ -112,9 +117,7 @@ class GSFlag:
     @property
     def npols(self) -> int | None:
         """The number of polarizations."""
-        if "pol" not in self.axes:
-            return None
-        return self.flags.shape[self.axes.index("pol")]
+        return self.flags.shape[self.axes.index("pol")] if "pol" in self.axes else None
 
     @classmethod
     def from_file(cls, filename: str | Path, filetype: str | None = None, **kw) -> Self:
@@ -150,18 +153,7 @@ class GSFlag:
         # If the user passes a single dictionary as history, append it.
         # Otherwise raise an error, unless it's not passed at all.
         history = kwargs.pop("history", None)
-        if isinstance(history, Stamp):
-            history = self.history.add(history)
-        elif isinstance(history, dict):
-            history = self.history.add(Stamp(**history))
-        elif isinstance(history, History):
-            history = self.history
-        elif history is not None:
-            raise ValueError(
-                f"History must be a Stamp object or dictionary, got {history}"
-            )
-        else:
-            history = self.history
+        history = self.history if history is None else self.history.add(history)
 
         return evolve(self, history=history, **kwargs)
 
@@ -191,8 +183,8 @@ class GSFlag:
             and self.nloads != other.nloads
         ):
             raise ValueError(
-                "Cannot multiply GSFlag objects with different loads. Got "
-                f"{self.nloads} and {other.nloads}."
+                "Objects have different nloads. Got "
+                f"this={self.nloads} and that={other.nloads}."
             )
 
         if (
@@ -201,8 +193,8 @@ class GSFlag:
             and self.npols != other.npols
         ):
             raise ValueError(
-                "Cannot multiply GSFlag objects with different polarizations. Got "
-                f"{self.npols} and {other.npols}"
+                "Objects have different npols. Got "
+                f"this={self.npols} and that={other.npols}"
             )
 
         if (
@@ -211,8 +203,8 @@ class GSFlag:
             and self.ntimes != other.ntimes
         ):
             raise ValueError(
-                "Cannot multiply GSFlag objects with different times. Got "
-                f"{self.ntimes} and {other.ntimes}"
+                "Objects have different ntimes. Got "
+                f"this={self.ntimes} and that={other.ntimes}"
             )
 
         if (
@@ -221,8 +213,8 @@ class GSFlag:
             and self.nfreqs != other.nfreqs
         ):
             raise ValueError(
-                "Cannot multiply GSFlag objects with different frequencies. Got "
-                f"{self.nfreqs} and {other.nfreqs}"
+                "Objects have different nfreqs. Got "
+                f"this={self.nfreqs} and that={other.nfreqs}"
             )
 
     def __or__(self, other: GSFlag) -> Self:
@@ -232,9 +224,7 @@ class GSFlag:
 
         self._check_compat(other)
         new_flags = np.squeeze(self.full_rank_flags | other.full_rank_flags)
-        axes = tuple(
-            ax for ax in ("load", "pol", "time", "freq") if ax in self.axes + other.axes
-        )
+        axes = tuple(ax for ax in self._axes if ax in self.axes + other.axes)
 
         return self.update(
             flags=new_flags,
@@ -252,9 +242,8 @@ class GSFlag:
 
         self._check_compat(other)
         new_flags = np.squeeze(self.full_rank_flags & other.full_rank_flags)
-        axes = tuple(
-            ax for ax in ("load", "pol", "time", "freq") if ax in self.axes + other.axes
-        )
+
+        axes = tuple(ax for ax in self._axes if ax in self.axes + other.axes)
 
         return self.update(
             flags=new_flags,
@@ -267,7 +256,7 @@ class GSFlag:
 
     def select(self, idx: np.ndarray | slice, axis: str, squeeze: bool = False) -> Self:
         """Select a subset of the data along the given axis."""
-        if axis not in ("load", "pol", "time", "freq"):
+        if axis not in self._axes:
             raise ValueError(f"Axis {axis} not recognized")
 
         if isinstance(idx, slice):
@@ -323,11 +312,37 @@ class GSFlag:
             flags=new_flags,
             axes=axes,
             history=self.history.add(
-                Stamp("Applied operation to data", axis=axis, op=op)
+                Stamp("Applied operation to data", parameters={"axis": axis, "op": op})
             ),
             filename=None,
         )
 
-    def any(self, axis: str | None = None) -> bool | Self:  # noqa: A003
+    def any(self, axis: str | None = None) -> bool | Self:
         """Return True if any of the flags are True."""
         return self.flags.any() if axis is None else self.op_on_axis(np.any, axis)
+
+    def all(self, axis: str | None = None) -> bool | Self:
+        """Return True if any of the flags are True."""
+        return self.flags.all() if axis is None else self.op_on_axis(np.all, axis)
+
+    def concat(self, others: GSFlag | Sequence[GSFlag], axis: str) -> GSFlag:
+        """Get a new GSFlag by concatenating other flags to this one."""
+        if isinstance(others, GSFlag):
+            others = [others]
+
+        if axis not in ("load", "pol", "time", "freq"):
+            raise ValueError(f"Axis {axis} not recognized")
+
+        if axis not in self.axes:
+            raise ValueError(f"Axis {axis} not present in this GSFlag object")
+
+        new_flags = np.concatenate(
+            [self.flags] + [o.flags for o in others], axis=self.axes.index(axis)
+        )
+        return self.update(
+            flags=new_flags,
+            history=self.history.add(
+                Stamp("Concatenated GSFlag objects", parameters={"axis": axis})
+            ),
+            filename=None,
+        )
