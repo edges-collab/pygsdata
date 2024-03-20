@@ -614,7 +614,7 @@ class GSData:
         if append_to_file:
             with h5py.File(new.filename, "a") as fl:
                 try:
-                    np.zeros(fl["data"].shape) * flags.full_rank_flags
+                    np.zeros(fl["data"]["data"].shape) * flags.full_rank_flags
                 except ValueError:
                     # Can't append to file because it would be inconsistent.
                     return new
