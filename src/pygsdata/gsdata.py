@@ -110,9 +110,9 @@ class GSData:
         default=None, possible_ndims=(4,), dtype=float
     )
 
-    data_unit: Literal[
-        "power", "temperature", "uncalibrated", "uncalibrated_temp"
-    ] = field(default="power")
+    data_unit: Literal["power", "temperature", "uncalibrated", "uncalibrated_temp"] = (
+        field(default="power")
+    )
     auxiliary_measurements: dict = field(factory=dict)
     time_ranges: Time | Longitude = timefield(shape=(None, None, 2))
     filename: Path | None = field(default=None, converter=cnv.optional(Path))
@@ -445,9 +445,9 @@ class GSData:
 
             fl.attrs["loads"] = "|".join(self.loads)
             fl["nsamples"] = self.nsamples
-            fl.attrs[
-                "effective_integration_time"
-            ] = self.effective_integration_time.to_value("s")
+            fl.attrs["effective_integration_time"] = (
+                self.effective_integration_time.to_value("s")
+            )
 
             flg_grp = fl.create_group("flags")
             if self.flags:
