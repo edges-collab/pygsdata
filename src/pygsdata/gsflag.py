@@ -328,6 +328,6 @@ class GSFlag:
             filename=None,
         )
 
-    def any(self, axis: str | None = None) -> bool | Self:  # noqa: A003
+    def any(self, axis: str | None = None) -> bool | Self:
         """Return True if any of the flags are True."""
         return self.flags.any() if axis is None else self.op_on_axis(np.any, axis)
