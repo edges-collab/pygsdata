@@ -180,12 +180,12 @@ def load_selector(
     indx: np.ndarray | None = None,
 ) -> np.ndarray:
     """Select a subset of the loads."""
-    mask = np.ones(len(_loads), dtype=bool)
+    mask = np.zeros(len(_loads), dtype=bool)
 
     if indx is not None:
         mask[indx] = True
     if loads is not None:
-        mask &= np.isin(_loads, loads)
+        mask |= np.isin(_loads, loads)
 
     return mask
 
@@ -256,6 +256,10 @@ def select_loads(
         loads=[load for i, load in enumerate(data.loads) if mask[i]],
         nsamples=data.nsamples[mask],
         flags={k: v.select(idx=mask, axis="load") for k, v in data.flags.items()},
+        times=data.times[:, mask],
+        time_ranges=data.time_ranges[:, mask],
+        lsts=data.lsts[:, mask],
+        lst_ranges=data.lst_ranges[:, mask],
     )
 
 
