@@ -31,6 +31,9 @@ def shape_validator(shape: tuple[int | None, ...]):
         shape = (shape,)
 
     def validator(inst, att, value):
+        if len(shape) != len(value.shape):
+            raise ValueError(f"{att.name} must have shape {shape}, got {value.shape}")
+
         for i, (d0, d1) in enumerate(zip(shape, value.shape)):
             if d0 is not None and d0 != d1:
                 raise ValueError(
@@ -89,7 +92,7 @@ def _cmp_num_array(x, y):
     elif x is None or y is None:
         return False
     else:
-        return x.shape == y.shape and np.allclose(x, y)
+        return (x.shape == y.shape or x.size == 1 or y.size == 1) and np.allclose(x, y)
 
 
 def npfield(
@@ -128,10 +131,39 @@ def npfield(
             kwargs["validator"] = attrs.validators.optional(validator)
 
     return field(
-        eq=cmp_using(_cmp_bool_array if dtype == bool else _cmp_num_array),
+        eq=cmp_using(_cmp_bool_array if dtype is bool else _cmp_num_array),
         converter=array_converter(dtype=dtype, allow_none=not required),
         **kwargs,
     )
+
+
+def _astropy_subclass_field(
+    cls,
+    defining_attr,
+    possible_ndims: tuple[int] | None = None,
+    shape: tuple[int] | None = None,
+    validator=None,
+    **kwargs,
+):
+    def cmp(x, y):
+        return x.shape == y.shape and np.allclose(
+            getattr(x, defining_attr), getattr(y, defining_attr), rtol=0, atol=1e-8
+        )
+
+    if validator is None:
+        validator = [attrs.validators.instance_of(cls)]
+    elif callable(validator):
+        validator = [validator, attrs.validators.instance_of(cls)]
+
+    if possible_ndims is not None:
+        validator.append(ndim_validator(possible_ndims))
+
+    if shape is not None:
+        validator.append(shape_validator(shape))
+
+    kwargs["validator"] = validator
+
+    return field(eq=cmp_using(cmp), **kwargs)
 
 
 def timefield(
@@ -141,27 +173,37 @@ def timefield(
     **kwargs,
 ):
     """Construct an attrs field for an astropy Time."""
+    return _astropy_subclass_field(
+        Time, "jd", possible_ndims, shape, validator, **kwargs
+    )
 
-    def cmp(x, y):
-        if isinstance(x, Time) and isinstance(y, Time):
-            return x.shape == y.shape and np.allclose(x.jd, y.jd)
-        elif isinstance(x, Longitude) and isinstance(y, Longitude):
-            return x.shape == y.shape and np.allclose(x.deg, y.deg)
-        else:
+
+def lstfield(
+    possible_ndims: tuple[int] | None = None,
+    shape: tuple[int] | None = None,
+    validator=None,
+    **kwargs,
+):
+    """Construct an attrs field for an astropy Time."""
+    return _astropy_subclass_field(
+        Longitude, "rad", possible_ndims, shape, validator, **kwargs
+    )
+
+
+def cmp_qtable(x, y):
+    """Compare two QTable objects."""
+    if x is None and y is None:
+        return True
+    elif x is None or y is None:
+        return False
+    else:
+        if type(x) != type(y):
+            return False
+        if x.columns.keys() != y.columns.keys():
             return False
 
-    if validator is None:
-        validator = []
-    elif callable(validator):
-        validator = [validator]
+        for key in x.columns:
+            if not np.all(x[key] == y[key]):
+                return False
 
-    if possible_ndims is not None:
-        validator.append(ndim_validator(possible_ndims))
-
-    if shape is not None:
-        validator.append(shape_validator(shape))
-
-    if validator:
-        kwargs["validator"] = validator
-
-    return field(eq=cmp_using(cmp), **kwargs)
+    return True

@@ -32,7 +32,6 @@ dependencies = [
     "attrs",
     "matplotlib",
     "hickleable",
-    "read_acq",
     "h5py",
     "typing_extensions",
     "pytz",
@@ -47,7 +46,8 @@ docs = [
 ]
 tests = [
     "pytest",
-    "pytest-cov"
+    "pytest-cov",
+    "pytest-xdist",
 ]
 dev = [
     "pre-commit",
@@ -88,6 +88,8 @@ extend-select = [
 ]
 ignore = [
     "DTZ007",   # use %z in strptime
+    "A003",     # class attribute shadows python builtin
+    "B008",     # function call in argument defaults
 ]
 [tool.ruff.lint.per-file-ignores]
 "tests/*.py" = [
@@ -107,7 +109,7 @@ convention = 'numpy'
 max-complexity = 15
 
 [tool.pytest.ini_options]
-addopts = "--verbose --durations=25"
+addopts = "--verbose --durations=10"
 norecursedirs = [
     "dist",
     "build",

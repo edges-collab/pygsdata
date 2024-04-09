@@ -13,24 +13,25 @@ import warnings
 from collections.abc import Iterable
 from functools import cached_property
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 import astropy.units as un
 import h5py
 import hickle
 import numpy as np
-from astropy.coordinates import EarthLocation, Longitude, UnknownSiteException
+from astropy.coordinates import Longitude
+from astropy.table import QTable
 from astropy.time import Time
+from attrs import cmp_using, define, evolve, field
 from attrs import converters as cnv
-from attrs import define, evolve, field
 from attrs import validators as vld
-from read_acq.read_acq import ACQError
 
 from . import coordinates as crd
-from .attrs import npfield, timefield
-from .constants import KNOWN_LOCATIONS
+from .attrs import cmp_qtable, lstfield, npfield, timefield
 from .gsflag import GSFlag
 from .history import History, Stamp
+from .telescope import Telescope, _pol_converter
+from .utils import time_concat
 
 logger = logging.getLogger(__name__)
 
@@ -46,10 +47,10 @@ class GSData:
         dimensions are (load, polarization, time, frequency). The data can be raw
         powers, calibrated temperatures, or even model residuals to such. Their type is
         specified by the ``data_unit`` attribute.
-    freq_array
+    freqs
         The frequency array. This must be a 1D array of frequencies specified as an
         astropy Quantity.
-    time_array
+    times
         The time array. This must be a 2D array of shape (times, loads). It can be in
         one of two formats: either an astropy Time object, specifying the absolute time,
         or an astropy Longitude object, specying the LSTs. In "lst" mode, there are
@@ -66,7 +67,14 @@ class GSData:
         integration time going into any measurement.
     effective_integration_time
         An astropy Quantity that specifies the amount of time going into a single
-        "sample" of the data.
+        "sample" of the data. This can either be a scalar, or a 4D array with the same
+        shape as the data array. If it is a scalar, it is assumed to be the same for all
+        data points. The default value is the integration time of the telescope.
+        Note that this value is *only* meant to be used to track the expected noise
+        level in the data, in conjunction with nsamples. It is not checked for
+        whether the time_ranges match the integration time (since the effective time
+        can be smaller than the time range due to windowing, or because the time_range
+        includes multiple observations).
     flags
         A dictionary mapping filter names to boolean arrays. Each boolean array has the
         same shape as the data array, and is True where the data is flagged.
@@ -86,26 +94,24 @@ class GSData:
         data if more is added (eg. flags, data model).
     """
 
+    telescope: Telescope = field(validator=vld.instance_of(Telescope))
     data: np.ndarray = npfield(dtype=float, possible_ndims=(4,))
-    freq_array: un.Quantity[un.MHz] = npfield(possible_ndims=(1,), unit=un.MHz)
-    time_array: Time | Longitude = timefield(possible_ndims=(2,))
-    telescope_location: EarthLocation = field(
-        validator=vld.instance_of(EarthLocation),
-        converter=lambda x: (
-            EarthLocation(*x) if not isinstance(x, EarthLocation) else x
-        ),
+    freqs: un.Quantity[un.MHz] = npfield(possible_ndims=(1,), unit=un.MHz)
+    times: Time = timefield(possible_ndims=(2,))
+
+    pols: tuple[str] = field(converter=_pol_converter)
+    _effective_integration_time: un.Quantity[un.s] = npfield(
+        possible_ndims=(0, 3), unit=un.s
     )
 
-    loads: tuple[str] = field(converter=tuple)
     nsamples: np.ndarray = npfield(dtype=float, possible_ndims=(4,))
+    loads: tuple[str] = field(converter=tuple)
 
-    effective_integration_time: un.Quantity[un.s] = field(default=1 * un.s)
     flags: dict[str, GSFlag] = field(factory=dict)
 
     history: History = field(
         factory=History, validator=vld.instance_of(History), eq=False
     )
-    telescope_name: str = field(default="unknown")
     residuals: np.ndarray | None = npfield(
         default=None, possible_ndims=(4,), dtype=float
     )
@@ -113,9 +119,14 @@ class GSData:
     data_unit: Literal[
         "power", "temperature", "uncalibrated", "uncalibrated_temp"
     ] = field(default="power")
-    auxiliary_measurements: dict = field(factory=dict)
-    time_ranges: Time | Longitude = timefield(shape=(None, None, 2))
-    filename: Path | None = field(default=None, converter=cnv.optional(Path))
+    auxiliary_measurements: QTable | None = field(
+        default=None, converter=cnv.optional(QTable), eq=cmp_using(cmp_qtable)
+    )
+    time_ranges: Time = timefield(shape=(None, None, 2))
+    lsts: Longitude = lstfield(possible_ndims=(2,))
+    lst_ranges: Longitude = lstfield(possible_ndims=(3,))
+
+    filename: Path | None = field(default=None, converter=cnv.optional(Path), eq=False)
     _file_appendable: bool = field(default=True, converter=bool)
     name: str = field(default="", converter=str)
 
@@ -147,48 +158,35 @@ class GSData:
         if value is not None and value.shape != self.data.shape:
             raise ValueError("residuals must have the same shape as data")
 
-    @freq_array.validator
-    def _freq_array_validator(self, attribute, value):
+    @freqs.validator
+    def _freqs_validator(self, attribute, value):
         if value.shape != (self.nfreqs,):
             raise ValueError(
-                "freq_array must have the size nfreqs. "
+                "freqs must have the size nfreqs. "
                 f"Got {value.shape} instead of {self.nfreqs}"
             )
 
-    @time_array.validator
-    def _time_array_validator(self, attribute, value):
+    @times.validator
+    def _times_validator(self, attribute, value):
         if value.shape != (self.ntimes, self.nloads):
             raise ValueError(
-                f"time_array must have the size (ntimes, nloads), got {value.shape} "
+                f"times must have the size (ntimes, nloads), got {value.shape} "
                 f"instead of {(self.ntimes, self.nloads)}"
             )
 
+    @pols.default
+    def _pols_default(self) -> tuple[str]:
+        return self.telescope.pols
+
     @time_ranges.default
     def _time_ranges_default(self):
-        if self.in_lst:
-            return Longitude(
-                np.concatenate(
-                    (
-                        self.time_array.hour[:, :, None],
-                        self.time_array.hour[:, :, None]
-                        + self.effective_integration_time.to_value("hour"),
-                    ),
-                    axis=-1,
-                )
-                * un.hour
-            )
-        else:
-            return Time(
-                np.concatenate(
-                    (
-                        self.time_array.jd[:, :, None],
-                        self.time_array.jd[:, :, None]
-                        + self.effective_integration_time.to_value("day"),
-                    ),
-                    axis=-1,
-                ),
-                format="jd",
-            )
+        return time_concat(
+            (
+                self.times[:, :, None],
+                self.times[:, :, None] + self.telescope.integration_time,
+            ),
+            axis=-1,
+        )
 
     @time_ranges.validator
     def _time_ranges_validator(self, attribute, value):
@@ -198,15 +196,15 @@ class GSData:
                 f" instead of {(self.ntimes, self.nloads, 2)}."
             )
 
-        if not self.in_lst and not np.all(value[..., 1] - value[..., 0] > 0):
+        if not np.all((value[..., 1] - value[..., 0]).value > 0):
             # TODO: properly check lst-type input, which can wrap...
             raise ValueError("time_ranges must all be greater than zero")
 
     @loads.default
     def _loads_default(self) -> tuple[str]:
-        if self.data.shape[0] == 1:
+        if self.nloads == 1:
             return ("ant",)
-        elif self.data.shape[0] == 3:
+        elif self.nloads == 3:
             return ("ant", "internal_load", "internal_load_plus_noise_source")
         else:
             raise ValueError(
@@ -223,34 +221,41 @@ class GSData:
         if not all(isinstance(x, str) for x in value):
             raise ValueError("loads must be a tuple of strings")
 
-    @effective_integration_time.validator
-    def _effective_integration_time_validator(self, attribute, value):
-        if not isinstance(value, un.Quantity):
-            raise TypeError("effective_integration_time must be a Quantity")
-
-        if not value.unit.is_equivalent("s"):
-            raise ValueError("effective_integration_time must be in seconds")
-
     @auxiliary_measurements.validator
     def _aux_meas_vld(self, attribute, value):
-        if not isinstance(value, dict):
-            raise TypeError("auxiliary_measurements must be a dictionary")
+        if value is None:
+            return
 
-        if isinstance(self.time_array, Longitude) and value:
+        if len(value) != self.ntimes:
             raise ValueError(
-                "If times are LSTs, auxiliary_measurements cannot be specified"
+                "auxiliary_measurements must be length ntimes."
+                f" Got {len(value)} instead of {self.ntimes}."
             )
 
-        for key, val in value.items():
-            if not isinstance(key, str):
-                raise TypeError("auxiliary_measurements keys must be strings")
-            if not isinstance(val, np.ndarray):
-                raise TypeError("auxiliary_measurements values must be arrays")
-            if val.shape[0] != self.ntimes:
-                raise ValueError(
-                    "auxiliary_measurements values must have the size ntimes "
-                    f"({self.ntimes}), but for {key} got shape {val.shape}"
-                )
+    @_effective_integration_time.default
+    def _eff_int_time_default(self) -> un.Quantity[un.s]:
+        return self.telescope.integration_time * np.ones(
+            (self.nloads, self.npols, self.ntimes)
+        )
+
+    @_effective_integration_time.validator
+    def _eff_int_time_vld(self, attribute, value):
+        if np.any(value.value <= 0):
+            raise ValueError("effective_integration_time must be greater than zero")
+
+        if value.size != 1 and value.shape != (self.nloads, self.npols, self.ntimes):
+            raise ValueError(
+                "effective_integration_time must be a scalar or have shape "
+                "(nloads, npols, ntimes)"
+            )
+
+    @cached_property
+    def effective_integration_time(self) -> un.Quantity[un.s]:
+        """The effective integration time."""
+        if self._effective_integration_time.size == 1:
+            return self._effective_integration_time * np.ones(self.data.shape[:-1])
+
+        return self._effective_integration_time
 
     @data_unit.validator
     def _data_unit_validator(self, attribute, value):
@@ -293,183 +298,131 @@ class GSData:
 
         return self.data - self.residuals
 
-    @property
-    def resids(self) -> np.ndarray | None:
-        """The residuals of the data."""
-        warnings.warn(
-            DeprecationWarning("Use the 'residuals' attribute instead of 'resids'"),
-            stacklevel=2,
-        )
-        return self.residuals
+    @lsts.default
+    def _lsts_default(self) -> Longitude:
+        return self.times.sidereal_time("apparent", self.telescope.location)
+
+    @lsts.validator
+    def _lsts_validator(self, attribute, value):
+        if value.shape != (self.ntimes, self.nloads):
+            raise ValueError(
+                f"lsts must have the size (ntimes, nloads), got {value.shape} "
+                f"instead of {(self.ntimes, self.nloads)}"
+            )
+
+    @lst_ranges.default
+    def _lst_ranges_default(self) -> Longitude:
+        return self.time_ranges.sidereal_time("apparent", self.telescope.location)
+
+    @lst_ranges.validator
+    def _lst_ranges_validator(self, attribute, value):
+        if value.shape != (self.ntimes, self.nloads, 2):
+            raise ValueError(
+                f"lst_ranges must have the size (ntimes, nloads, 2), got {value.shape} "
+                f"instead of {(self.ntimes, self.nloads, 2)}"
+            )
 
     @classmethod
-    def read_acq(
+    def from_file(
         cls,
         filename: str | Path,
-        telescope_location: str | EarthLocation,
-        name="{year}_{day}",
+        reader: str | None = None,
+        selectors: dict[str, Any] | None = None,
+        concat_axis: Literal["load", "pol", "time", "freq"] | None = None,
         **kw,
     ) -> GSData:
-        """Read an ACQ file."""
-        filename = Path(filename)
-
-        try:
-            from read_acq import read_acq
-        except ImportError as e:
-            raise ImportError(
-                "read_acq is not installed -- install it to read ACQ files"
-            ) from e
-
-        _, (pant, pload, plns), anc = read_acq.decode_file(filename, meta=True)
-
-        if pant.size == 0:
-            raise ACQError(f"No data in file {filename}")
-
-        times = Time(anc.data.pop("times"), format="yday", scale="utc")
-
-        if isinstance(telescope_location, str):
-            try:
-                telescope_location = EarthLocation.of_site(telescope_location)
-            except UnknownSiteException:
-                try:
-                    telescope_location = KNOWN_LOCATIONS[telescope_location]
-                except KeyError as e:
-                    raise ValueError(
-                        "telescope_location must be an EarthLocation or a known site, "
-                        f"got {telescope_location}"
-                    ) from e
-
-        year, day, hour, minute = times[0, 0].to_value("yday", "date_hm").split(":")
-        name = name.format(
-            year=year, day=day, hour=hour, minute=minute, stem=filename.stem
-        )
-        return cls(
-            data=np.array([pant.T, pload.T, plns.T])[:, np.newaxis],
-            time_array=times,
-            freq_array=anc.frequencies * un.MHz,
-            data_unit="power",
-            loads=("ant", "internal_load", "internal_load_plus_noise_source"),
-            auxiliary_measurements={name: anc.data[name] for name in anc.data},
-            filename=filename,
-            telescope_location=telescope_location,
-            name=name,
-            **kw,
-        )
-
-    @classmethod
-    def from_file(cls, filename: str | Path, **kw) -> GSData:
         """Create a GSData instance from a file.
 
         This method attempts to auto-detect the file type and read it.
         """
-        filename = Path(filename)
+        from .readers import GSDATA_READERS
 
-        if filename.suffix == ".acq":
-            return cls.read_acq(filename, **kw)
-        elif filename.suffix == ".gsh5":
-            return cls.read_gsh5(filename)
-        else:
-            raise ValueError("Unrecognized file type")
+        selectors = selectors or {}
 
-    @classmethod
-    def read_gsh5(cls, filename: str) -> GSData:
-        """Read a GSH5 file to construct the object."""
-        with h5py.File(filename, "r") as fl:
-            data = fl["data"][:]
-            lat, lon, alt = fl["telescope_location"][:]
-            telescope_location = EarthLocation(
-                lat=lat * un.deg, lon=lon * un.deg, height=alt * un.m
+        def _from_file(pth, reader):
+            filename = Path(pth)
+
+            if reader is None:
+                reader = filename.suffix[1:]
+
+            fnc = next(
+                (k for k in GSDATA_READERS.values() if reader in k.suffices), None
             )
-            times = fl["time_array"][:]
 
-            if np.all(times < 24.0):
-                time_array = Longitude(times * un.hour)
-            else:
-                time_array = Time(times, format="jd", location=telescope_location)
-            freq_array = fl["freq_array"][:] * un.MHz
-            data_unit = fl.attrs["data_unit"]
-            objname = fl.attrs["name"]
-            loads = fl.attrs["loads"].split("|")
-            auxiliary_measurements = {
-                name: fl["auxiliary_measurements"][name][:]
-                for name in fl["auxiliary_measurements"]
-            }
-            nsamples = fl["nsamples"][:]
+            if fnc is None:
+                raise ValueError(f"Unrecognized file type {reader}")
 
-            flg_grp = fl["flags"]
-            flags = {}
-            if "names" in flg_grp.attrs:
-                flag_keys = flg_grp.attrs["names"]
-                for name in flag_keys:
-                    flags[name] = hickle.load(fl["flags"][name])
+            if fnc.select_on_read:
+                return fnc(filename, selectors=selectors, **kw)
 
-            filename = filename
+            from .select import select_freqs, select_loads, select_lsts, select_times
 
-            history = History.from_repr(fl.attrs["history"])
+            data = fnc(filename, **kw)
 
-            residuals = fl["residuals"][()] if "residuals" in fl else None
+            if "freq_selector" in selectors:
+                data = select_freqs(data, **selectors["freq_selector"])
+            if "time_selector" in selectors:
+                data = select_times(data, **selectors["time_selector"])
+            if "lst_selector" in selectors:
+                data = select_lsts(data, **selectors["lst_selector"])
+            if "load_selector" in selectors:
+                data = select_loads(data, **selectors["load_selector"])
 
-        return cls(
-            data=data,
-            time_array=time_array,
-            freq_array=freq_array,
-            data_unit=data_unit,
-            loads=loads,
-            auxiliary_measurements=auxiliary_measurements,
-            filename=filename,
-            nsamples=nsamples,
-            flags=flags,
-            history=history,
-            telescope_location=telescope_location,
-            residuals=residuals,
-            name=objname,
-        )
+            return data
+
+        filename = [filename] if isinstance(filename, (str, Path)) else filename
+        datas = [_from_file(pth, reader) for pth in filename]
+
+        if len(datas) == 1:
+            return datas[0]
+
+        from .concat import concat
+
+        return concat(datas, concat_axis)
 
     def write_gsh5(self, filename: str) -> GSData:
         """Write the data in the GSData object to a GSH5 file."""
         with h5py.File(filename, "w") as fl:
-            fl["data"] = self.data
-            fl["freq_array"] = self.freq_array.to_value("MHz")
-            if self.in_lst:
-                fl["time_array"] = self.time_array.hour
-            else:
-                fl["time_array"] = self.time_array.jd
+            # The GSH5 file version: <major>.<minor>. The minor version is incremented
+            # when the file format changes in a backwards-compatible way. The major
+            # version is incremented when the file format changes in a way
+            # that requires a new reader.
+            fl.attrs["version"] = "2.0"
 
-            fl["telescope_location"] = np.array(
-                [
-                    self.telescope_location.lat.deg,
-                    self.telescope_location.lon.deg,
-                    self.telescope_location.height.to_value("m"),
-                ]
-            )
-
-            fl.attrs["loads"] = "|".join(self.loads)
-            fl["nsamples"] = self.nsamples
-            fl.attrs[
+            meta = fl.create_group("metadata")
+            self.telescope.write(meta.create_group("telescope"))
+            meta["freqs"] = self.freqs.to_value("MHz")
+            meta["freqs"].attrs["unit"] = "MHz"
+            meta[
                 "effective_integration_time"
-            ] = self.effective_integration_time.to_value("s")
+            ] = self._effective_integration_time.to_value("s")
 
-            flg_grp = fl.create_group("flags")
+            meta["times"] = self.times.jd
+            meta["lsts"] = self.lsts.hour
+            meta.attrs["data_unit"] = self.data_unit
+            meta["loads"] = self.loads
+            meta.attrs["history"] = repr(self.history)
+            meta.attrs["name"] = self.name
+
+            dgrp = fl.create_group("data")
+            dgrp["data"] = self.data
+            dgrp["nsamples"] = self.nsamples
+
+            flg_grp = dgrp.create_group("flags")
             if self.flags:
                 flg_grp.attrs["names"] = tuple(self.flags.keys())
                 for name, flag in self.flags.items():
                     hickle.dump(flag, flg_grp.create_group(name))
 
-            fl.attrs["telescope_name"] = self.telescope_name
-            fl.attrs["data_unit"] = self.data_unit
-
-            # Now history
-            fl.attrs["history"] = repr(self.history)
-            fl.attrs["name"] = self.name
-
             # Data model
             if self.residuals is not None:
-                fl["residuals"] = self.residuals
+                dgrp["residuals"] = self.residuals
 
             # Now aux measurements
             aux_grp = fl.create_group("auxiliary_measurements")
-            for name, meas in self.auxiliary_measurements.items():
-                aux_grp[name] = meas
+            if self.auxiliary_measurements is not None:
+                for name, meas in self.auxiliary_measurements.items():
+                    aux_grp[name] = meas
 
         return self.update(filename=filename)
 
@@ -497,21 +450,30 @@ class GSData:
         if self.data.shape != other.data.shape:
             raise ValueError("Cannot add GSData objects with different shapes")
 
-        if self.auxiliary_measurements or other.auxiliary_measurements:
-            raise ValueError("Cannot add GSData objects with auxiliary measurements")
-
-        if not np.allclose(self.freq_array, other.freq_array):
+        if not np.allclose(self.freqs, other.freqs):
             raise ValueError("Cannot add GSData objects with different frequencies")
 
-        if self.in_lst != other.in_lst:
-            raise ValueError("Cannot add GSData objects with different time formats")
-
-        if self.in_lst:
-            if not np.allclose(self.time_array.hour, other.time_array.hour):
-                raise ValueError("Cannot add GSData objects with different LSTs")
+        if self.auxiliary_measurements and not other.auxiliary_measurements:
+            aux = self.auxiliary_measurements
+        elif not self.auxiliary_measurements and other.auxiliary_measurements:
+            aux = other.auxiliary_measurements
+        elif self.auxiliary_measurements:
+            aux = dict(other.auxiliary_measurements.items())
+            aux.update(self.auxiliary_measurements)
+            aux = QTable(aux)
+            if any(
+                k in other.auxiliary_measurements for k in self.auxiliary_measurements
+            ):
+                warnings.warn(
+                    "Overlapping auxiliary measurements exist between objects,"
+                    " the ones in the first object will be retained.",
+                    stacklevel=2,
+                )
         else:
-            if not np.allclose(self.time_array.jd, other.time_array.jd):
-                raise ValueError("Cannot add GSData objects with different times")
+            aux = None
+
+        if not np.allclose(self.times.jd, other.times.jd, rtol=0, atol=1e-8):
+            raise ValueError("Cannot add GSData objects with different times")
 
         # If non of the above, then we have two GSData objects at the same times and
         # frequencies. Adding them should just be a weighted sum.
@@ -519,7 +481,7 @@ class GSData:
         d1 = np.ma.masked_array(self.data, mask=self.complete_flags)
         d2 = np.ma.masked_array(other.data, mask=other.complete_flags)
 
-        mean = (self.flagged_nsamples * d1 + other.flagged_nsamples * d2) / nsamples
+        mean = self.flagged_nsamples * d1 + other.flagged_nsamples * d2
 
         if self.residuals is not None and other.residuals is not None:
             r1 = np.ma.masked_array(self.residuals, mask=self.complete_flags)
@@ -536,67 +498,25 @@ class GSData:
             residuals=resids,
             nsamples=nsamples,
             flags={"summed_flags": total_flags},
+            auxiliary_measurements=aux,
         )
-
-    @cached_property
-    def lst_array(self) -> Longitude:
-        """The local sidereal time array."""
-        if self.in_lst:
-            return self.time_array
-        else:
-            return self.time_array.sidereal_time("apparent", self.telescope_location)
-
-    @cached_property
-    def lst_ranges(self) -> Longitude:
-        """The local sidereal time array."""
-        if self.in_lst:
-            return self.time_ranges
-        else:
-            return self.time_ranges.sidereal_time("apparent", self.telescope_location)
 
     @cached_property
     def gha(self) -> np.ndarray:
         """The GHA's of the observations."""
-        return Longitude(crd.lst2gha(self.lst_array.hour) * un.hourangle)
+        return crd.lst2gha(self.lsts)
 
     def get_moon_azel(self) -> tuple[np.ndarray, np.ndarray]:
         """Get the Moon's azimuth and elevation for each time in deg."""
-        if self.in_lst:
-            raise ValueError(
-                "Cannot compute Moon positions when time array is not a Time object"
-            )
-
         return crd.moon_azel(
-            self.time_array[:, self.loads.index("ant")], self.telescope_location
+            self.times[:, self.loads.index("ant")], self.telescope.location
         )
 
     def get_sun_azel(self) -> tuple[np.ndarray, np.ndarray]:
         """Get the Sun's azimuth and elevation for each time in deg."""
-        if self.in_lst:
-            raise ValueError(
-                "Cannot compute Sun positions when time array is not a Time object"
-            )
-
         return crd.sun_azel(
-            self.time_array[:, self.loads.index("ant")], self.telescope_location
+            self.times[:, self.loads.index("ant")], self.telescope.location
         )
-
-    def to_lsts(self) -> GSData:
-        """
-        Convert the time array to LST.
-
-        Warning: this is an irreversible operation. You cannot go back to UTC after
-        doing this. Furthermore, the auxiliary measurements will be lost.
-        """
-        if self.in_lst:
-            return self
-
-        return self.update(time_array=self.lst_array, auxiliary_measurements={})
-
-    @property
-    def in_lst(self) -> bool:
-        """Returns True if the time array is in LST."""
-        return isinstance(self.time_array, Longitude)
 
     @property
     def nflagging_ops(self) -> int:
@@ -650,12 +570,7 @@ class GSData:
 
         subfmt = "date_hm" if hours else "date"
 
-        if self.in_lst:
-            raise ValueError(
-                "Cannot represent times as year-days, as the object is in LST mode"
-            )
-
-        out = self.time_array[0, self.loads.index("ant")].to_value("yday", subfmt)
+        out = self.times[0, self.loads.index("ant")].to_value("yday", subfmt)
 
         if hours and not minutes:
             out = ":".join(out.split(":")[:-1])
@@ -696,12 +611,12 @@ class GSData:
         if append_to_file:
             with h5py.File(new.filename, "a") as fl:
                 try:
-                    np.zeros(fl["data"].shape) * flags.full_rank_flags
+                    np.zeros(fl["data"]["data"].shape) * flags.full_rank_flags
                 except ValueError:
                     # Can't append to file because it would be inconsistent.
                     return new
 
-                flg_grp = fl["flags"]
+                flg_grp = fl["data"]["flags"]
 
                 names_in_file = flg_grp.attrs.get("names", ())
 

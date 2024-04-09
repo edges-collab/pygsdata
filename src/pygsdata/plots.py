@@ -64,27 +64,23 @@ def plot_waterfall(
     q = q[load, pol, :, :]
 
     if ax is None:
-        ax = plt.subplots(1, 1)[1]
+        ax = plt.subplots(1, 1, layout="constrained")[1]
 
-    if attribute == "resids":
+    if attribute == "residuals":
         cmap = imshow_kwargs.pop("cmap", "coolwarm")
     else:
         cmap = imshow_kwargs.pop("cmap", "magma")
 
-    times = data.time_array
+    times = data.times
 
     img = ax.imshow(
         q,
         origin="lower",
         extent=(
-            data.freq_array.min().to_value("MHz"),
-            data.freq_array.max().to_value("MHz"),
-            0,
-            (
-                (times.max() - times.min()).hour
-                if data.in_lst
-                else (times.max() - times.min()).to_value("hour")
-            ),
+            data.freqs.min().to_value("MHz"),
+            data.freqs.max().to_value("MHz"),
+            times.jd.min(),
+            times.jd.max(),
         ),
         cmap=cmap,
         aspect="auto",
@@ -95,16 +91,25 @@ def plot_waterfall(
     if xlab:
         ax.set_xlabel("Frequency [MHz]")
     if ylab:
-        if data.in_lst:
-            ax.set_ylabel("LST")
-        else:
-            ax.set_ylabel("Hours into Observation")
+        ax.set_ylabel("JD")
 
-    if title and not isinstance(title, str) and not data.in_lst:
-        ax.set_title(f"{data.get_initial_yearday()}. LST0={data.lst_array[0][0]:.2f}")
+    dlst = data.times.jd[0, 0] * 24.0 - data.lsts.hourangle[0, 0]
 
-    if cbar:
-        cb = plt.colorbar(img, ax=ax)
-        cb.set_label(data.loads[load])
+    def jd2lst(jd):
+        return jd * 24 - dlst  # spl_jd2lst(jd) % 24
 
-    return ax
+    def lst2jd(lst):
+        return lst + dlst
+
+    v2 = ax.secondary_yaxis("right", functions=(jd2lst, lst2jd))
+    v2.set_ylabel("LST [hour]")
+    v2.yaxis.set_major_formatter(lambda x, pos: str(x % 24))
+
+    if title and not isinstance(title, str):
+        ax.set_title(f"{data.get_initial_yearday()}")
+    if title and isinstance(title, str):
+        ax.set_title(title)
+
+    cb = plt.colorbar(img, ax=ax, pad=0.1) if cbar else None
+
+    return ax, cb
