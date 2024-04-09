@@ -177,15 +177,20 @@ def lst_selector(
 def load_selector(
     _loads: list[str],
     loads: str | None = None,
-    indx: np.ndarray | None = None,
+    indx: np.ndarray | list | None = None,
 ) -> np.ndarray:
     """Select a subset of the loads."""
-    mask = np.zeros(len(_loads), dtype=bool)
+    mask = np.ones(len(_loads), dtype=bool)
 
     if indx is not None:
-        mask[indx] = True
+        if isinstance(indx, np.ndarray):
+            indx = indx.tolist()
+
+        for i in range(len(mask)):
+            mask[i] = i in indx
+
     if loads is not None:
-        mask |= np.isin(_loads, loads)
+        mask &= np.isin(_loads, loads)
 
     return mask
 
@@ -260,6 +265,7 @@ def select_loads(
         time_ranges=data.time_ranges[:, mask],
         lsts=data.lsts[:, mask],
         lst_ranges=data.lst_ranges[:, mask],
+        effective_integration_time=data.effective_integration_time[mask],
     )
 
 
