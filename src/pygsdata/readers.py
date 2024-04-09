@@ -1,6 +1,7 @@
 """Module defining the readers for the different file formats."""
 from __future__ import annotations
 
+import pickle
 from pathlib import Path
 from typing import Any
 
@@ -57,6 +58,15 @@ def read_gsh5(
         raise ValueError(f"Unsupported file format version: {version}")
 
     return reader(filename, selectors)
+
+
+@gsdata_reader(select_on_read=False, formats=["gspkl"])
+def read_gspkl(
+    filename: str | Path,
+) -> GSData:
+    """Read a GSPKL file to construct the object."""
+    with Path(filename).open("rb") as fl:
+        return pickle.load(fl)
 
 
 class _GSH5Readers:

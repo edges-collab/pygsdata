@@ -4,7 +4,16 @@ import pytest
 from pygsdata import GSData
 
 
-@pytest.mark.parametrize("data", ["simple_gsdata", "power_gsdata"])
+@pytest.mark.parametrize(
+    "data",
+    [
+        "simple_gsdata",
+        "power_gsdata",
+        "flagged_gsdata",
+        "modelled_gsdata",
+        "simple_gsdata_noaux",
+    ],
+)
 def test_read_write_loop(data, request, tmp_path):
     """Test reading and writing a GSH5 file."""
     gsd = request.getfixturevalue(data)

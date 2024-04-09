@@ -196,9 +196,6 @@ class GSData:
                 f" instead of {(self.ntimes, self.nloads, 2)}."
             )
 
-        if not isinstance(value, Time):
-            raise TypeError("time_ranges must be a Time object")
-
         if not np.all((value[..., 1] - value[..., 0]).value > 0):
             # TODO: properly check lst-type input, which can wrap...
             raise ValueError("time_ranges must all be greater than zero")
@@ -475,7 +472,7 @@ class GSData:
         else:
             aux = None
 
-        if not np.allclose(self.times.jd, other.times.jd):
+        if not np.allclose(self.times.jd, other.times.jd, rtol=0, atol=1e-8):
             raise ValueError("Cannot add GSData objects with different times")
 
         # If non of the above, then we have two GSData objects at the same times and
