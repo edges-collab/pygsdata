@@ -246,7 +246,7 @@ class GSData:
         if value.size != 1 and value.shape != (self.nloads, self.npols, self.ntimes):
             raise ValueError(
                 "effective_integration_time must be a scalar or have shape "
-                "(nloads, npols, ntimes)"
+                f"(nloads, npols, ntimes), got {value.shape}"
             )
 
     @cached_property
