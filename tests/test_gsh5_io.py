@@ -1,4 +1,5 @@
 """Tests of the I/O for GSH5 data format."""
+
 import attrs
 import pytest
 from pygsdata import GSData

@@ -1,4 +1,5 @@
 """Test the utils module."""
+
 import numpy as np
 from astropy.coordinates import Angle, Longitude
 from pygsdata import utils

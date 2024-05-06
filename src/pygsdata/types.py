@@ -1,4 +1,5 @@
 """Various types used throughout the package."""
+
 from typing import Union
 
 import astropy.units as un

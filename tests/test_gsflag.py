@@ -1,4 +1,5 @@
 """Tests of the GSFlag object."""
+
 from itertools import product
 
 import numpy as np

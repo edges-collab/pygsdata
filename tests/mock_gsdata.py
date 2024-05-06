@@ -1,4 +1,5 @@
 """Create very simple mock GSData objects for testing purposes."""
+
 from __future__ import annotations
 
 import numpy as np
