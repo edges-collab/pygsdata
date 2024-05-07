@@ -1,4 +1,5 @@
 """Tests of the selectors."""
+
 from pygsdata.select import select_loads
 
 

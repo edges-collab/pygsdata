@@ -1,4 +1,5 @@
 """Top-level configuration for tests."""
+
 import numpy as np
 import pytest
 from mock_gsdata import mockgsd

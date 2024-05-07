@@ -10,16 +10,16 @@ except PackageNotFoundError:
 
 __all__ = [
     "GSDATA_PROCESSORS",
+    "KNOWN_TELESCOPES",
     "GSData",
     "GSFlag",
     "History",
     "Stamp",
+    "Telescope",
     "gsregister",
     "select_freqs",
     "select_lsts",
     "select_times",
-    "KNOWN_TELESCOPES",
-    "Telescope",
 ]
 
 from .constants import KNOWN_TELESCOPES

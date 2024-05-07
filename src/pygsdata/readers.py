@@ -1,4 +1,5 @@
 """Module defining the readers for the different file formats."""
+
 from __future__ import annotations
 
 import pickle
@@ -50,7 +51,7 @@ def read_gsh5(
         with h5py.File(filename, "r") as fl:
             return read_gsh5(fl, selectors)
 
-    version = filename.attrs["version"] if "version" in filename.attrs else "1.0"
+    version = filename.attrs.get("version", "1.0")
 
     major = version.split(".")[0]
     reader = getattr(_GSH5Readers, f"v{major}", None)
