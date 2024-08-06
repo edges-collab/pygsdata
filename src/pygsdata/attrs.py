@@ -197,7 +197,7 @@ def cmp_qtable(x, y):
     elif x is None or y is None:
         return False
     else:
-        if type(x) != type(y):
+        if type(x) is not type(y):
             return False
         if x.columns.keys() != y.columns.keys():
             return False
