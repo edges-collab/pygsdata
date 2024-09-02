@@ -3,6 +3,7 @@
 from datetime import datetime
 
 import pytest
+
 from pygsdata import History, Stamp
 
 

@@ -2,6 +2,7 @@
 
 import attrs
 import pytest
+
 from pygsdata import GSData
 
 

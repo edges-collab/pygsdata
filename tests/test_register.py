@@ -1,6 +1,7 @@
 """Test the register module."""
 
 import pytest
+
 from pygsdata import gsregister
 
 

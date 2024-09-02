@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 from astropy import units as un
 from mock_gsdata import flag_constant, mockgsd
+
 from pygsdata.concat import concat
 
 

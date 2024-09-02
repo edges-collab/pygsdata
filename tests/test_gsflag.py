@@ -4,6 +4,7 @@ from itertools import product
 
 import numpy as np
 import pytest
+
 from pygsdata import GSFlag, History, Stamp
 
 
