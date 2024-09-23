@@ -1,6 +1,8 @@
 """Module defining the readers for the different file formats."""
+
 from __future__ import annotations
 
+import pickle
 from pathlib import Path
 from typing import Any
 
@@ -49,7 +51,7 @@ def read_gsh5(
         with h5py.File(filename, "r") as fl:
             return read_gsh5(fl, selectors)
 
-    version = filename.attrs["version"] if "version" in filename.attrs else "1.0"
+    version = filename.attrs.get("version", "1.0")
 
     major = version.split(".")[0]
     reader = getattr(_GSH5Readers, f"v{major}", None)
@@ -57,6 +59,15 @@ def read_gsh5(
         raise ValueError(f"Unsupported file format version: {version}")
 
     return reader(filename, selectors)
+
+
+@gsdata_reader(select_on_read=False, formats=["gspkl"])
+def read_gspkl(
+    filename: str | Path,
+) -> GSData:
+    """Read a GSPKL file to construct the object."""
+    with Path(filename).open("rb") as fl:
+        return pickle.load(fl)
 
 
 class _GSH5Readers:

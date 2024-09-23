@@ -27,12 +27,12 @@ def sun_azel(times: apt.Time, obs_location: apc.EarthLocation) -> np.ndarray:
 
 def lst2gha(lst: AngleType) -> AngleType:
     """Convert LST to GHA."""
-    return (lst - const.galactic_centre_lst) % apu.Quantity(24, "hourangle")
+    return lst.__class__((lst - const.galactic_centre_lst) % (24 * apu.hourangle))
 
 
 def gha2lst(gha: AngleType) -> AngleType:
     """Convert GHA to LST."""
-    return (gha + const.galactic_centre_lst) % apu.Quantity(24, "hourangle")
+    return gha.__class__((gha + const.galactic_centre_lst) % (24 * apu.hourangle))
 
 
 def lst_to_earth_time(time: apt.Time) -> float:

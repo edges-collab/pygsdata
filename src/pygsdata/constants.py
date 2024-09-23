@@ -15,4 +15,4 @@ KNOWN_TELESCOPES = {
     )
 }
 
-galactic_centre_lst = 17.76111111111111 * apu.hourangle  # hours
+galactic_centre_lst = apc.Longitude(17.76111111111111 * apu.hourangle)

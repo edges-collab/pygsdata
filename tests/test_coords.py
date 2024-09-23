@@ -11,7 +11,7 @@ from pygsdata.coordinates import lst2gha, lsts_to_times
 
 def test_lsts_to_times():
     """Test the conversion of LSTs to times."""
-    lsts = np.arange(0, 24, 0.5)
+    lsts = np.arange(0, 24, 0.5) * apu.hourangle
     ref_time = apt.Time("2020-01-01T00:00:00")
     times = lsts_to_times(
         lsts=lsts,

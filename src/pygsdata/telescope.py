@@ -2,6 +2,7 @@
 
 This defines a very simple Telescope class to hold telescope-related info.
 """
+
 from __future__ import annotations
 
 from collections.abc import Sequence

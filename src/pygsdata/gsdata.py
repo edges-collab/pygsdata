@@ -116,9 +116,9 @@ class GSData:
         default=None, possible_ndims=(4,), dtype=float
     )
 
-    data_unit: Literal[
-        "power", "temperature", "uncalibrated", "uncalibrated_temp"
-    ] = field(default="power")
+    data_unit: Literal["power", "temperature", "uncalibrated", "uncalibrated_temp"] = (
+        field(default="power")
+    )
     auxiliary_measurements: QTable | None = field(
         default=None, converter=cnv.optional(QTable), eq=cmp_using(cmp_qtable)
     )
@@ -196,9 +196,6 @@ class GSData:
                 f" instead of {(self.ntimes, self.nloads, 2)}."
             )
 
-        if not isinstance(value, Time):
-            raise TypeError("time_ranges must be a Time object")
-
         if not np.all((value[..., 1] - value[..., 0]).value > 0):
             # TODO: properly check lst-type input, which can wrap...
             raise ValueError("time_ranges must all be greater than zero")
@@ -249,7 +246,7 @@ class GSData:
         if value.size != 1 and value.shape != (self.nloads, self.npols, self.ntimes):
             raise ValueError(
                 "effective_integration_time must be a scalar or have shape "
-                "(nloads, npols, ntimes)"
+                f"(nloads, npols, ntimes), got {value.shape}"
             )
 
     @cached_property
@@ -396,9 +393,9 @@ class GSData:
             self.telescope.write(meta.create_group("telescope"))
             meta["freqs"] = self.freqs.to_value("MHz")
             meta["freqs"].attrs["unit"] = "MHz"
-            meta[
-                "effective_integration_time"
-            ] = self._effective_integration_time.to_value("s")
+            meta["effective_integration_time"] = (
+                self._effective_integration_time.to_value("s")
+            )
 
             meta["times"] = self.times.jd
             meta["lsts"] = self.lsts.hour
@@ -475,7 +472,7 @@ class GSData:
         else:
             aux = None
 
-        if not np.allclose(self.times.jd, other.times.jd):
+        if not np.allclose(self.times.jd, other.times.jd, rtol=0, atol=1e-8):
             raise ValueError("Cannot add GSData objects with different times")
 
         # If non of the above, then we have two GSData objects at the same times and
