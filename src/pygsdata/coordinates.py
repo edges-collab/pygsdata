@@ -13,13 +13,15 @@ from .types import AngleType
 
 def moon_azel(times: apt.Time, obs_location: apc.EarthLocation) -> np.ndarray:
     """Get local coordinates of the Sun using Astropy."""
-    moon = apc.get_moon(times).transform_to(apc.AltAz(location=obs_location))
+    moon = apc.get_body("moon", time=times).transform_to(
+        apc.AltAz(location=obs_location)
+    )
     return moon.az.deg, moon.alt.deg
 
 
 def sun_azel(times: apt.Time, obs_location: apc.EarthLocation) -> np.ndarray:
     """Get local coordinates of the Sun using Astropy."""
-    sun = apc.get_sun(times).transform_to(apc.AltAz(location=obs_location))
+    sun = apc.get_body("sun", time=times).transform_to(apc.AltAz(location=obs_location))
     return sun.az.deg, sun.alt.deg
 
 
