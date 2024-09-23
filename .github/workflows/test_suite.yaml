@@ -71,6 +71,8 @@ jobs:
         run: |
           pip install -U coverage
           pip install .[dev]
+          pip install ipykernel
+          python -m ipykernel install --user --name=edges
 
       - name: Get downstream package
         run: |
