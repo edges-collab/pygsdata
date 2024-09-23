@@ -5,6 +5,7 @@ import pytest
 from astropy import coordinates as apc
 from astropy import time as apt
 from astropy import units as apu
+
 from pygsdata.constants import KNOWN_TELESCOPES
 from pygsdata.coordinates import lst2gha, lsts_to_times
 

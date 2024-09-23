@@ -5,10 +5,11 @@ import h5py
 import numpy as np
 import pytest
 from astropy import units as un
+
 from pygsdata import KNOWN_TELESCOPES, Telescope
 
 
-@pytest.fixture()
+@pytest.fixture
 def edgeslow():
     """Return the edges-low telescope."""
     return KNOWN_TELESCOPES["edges-low"]

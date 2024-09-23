@@ -5,6 +5,7 @@ from __future__ import annotations
 import numpy as np
 from astropy import units as un
 from astropy.time import Time
+
 from pygsdata import GSData, GSFlag
 from pygsdata.constants import KNOWN_TELESCOPES
 

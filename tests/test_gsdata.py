@@ -11,6 +11,7 @@ import pytest
 from astropy import units as un
 from astropy.coordinates import Longitude
 from astropy.time import Time
+
 from pygsdata import (
     GSData,
     GSFlag,

@@ -36,7 +36,10 @@ jobs:
           pip install .[dev]
       - name: Run Tests
         run: |
-          coverage run --parallel-mode -m pytest
+          coverage run --parallel-mode -m pytest -n auto
+      - name: Show Files
+        run: |
+          ls -al
 
       - name: Upload coverage data
         uses: actions/upload-artifact@v4
@@ -44,6 +47,7 @@ jobs:
           name: coverage-data-tests-${{ matrix.python-version }}-${{ matrix.os }}
           path: ".coverage.*"
           if-no-files-found: error
+          include-hidden-files: true
 
   downstream:
     env:
@@ -53,7 +57,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        package: ['edges-analysis']
+        package: ['read_acq', 'edges-cal', 'edges-analysis']
       fail-fast: false
     steps:
       - uses: actions/checkout@master
@@ -67,6 +71,8 @@ jobs:
         run: |
           pip install -U coverage
           pip install .[dev]
+          pip install ipykernel
+          python -m ipykernel install --user --name=edges
 
       - name: Get downstream package
         run: |
@@ -85,6 +91,7 @@ jobs:
           name: coverage-data-downstream-${{ matrix.package }}
           path: ".coverage.*"
           if-no-files-found: error
+          include-hidden-files: true
 
   codecov:
     needs: [tests]

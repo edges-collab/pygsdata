@@ -1,6 +1,7 @@
 """Test the plots module."""
 
 import pytest
+
 from pygsdata import plots
 
 
