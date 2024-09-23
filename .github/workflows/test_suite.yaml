@@ -37,6 +37,9 @@ jobs:
       - name: Run Tests
         run: |
           coverage run --parallel-mode -m pytest -n auto
+      - name: Show Files
+        run: |
+          ls -al
 
       - name: Upload coverage data
         uses: actions/upload-artifact@v4

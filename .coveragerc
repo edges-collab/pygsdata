@@ -2,7 +2,6 @@
 [run]
 branch = True
 source = pygsdata
-# omit = bad_file.py
 
 [paths]
 source =
