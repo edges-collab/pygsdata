@@ -36,7 +36,7 @@ jobs:
           pip install .[dev]
       - name: Run Tests
         run: |
-          python -m pytest --cov=pygsdata -n auto
+          python -m pytest -n auto
 
       - name: Upload coverage data
         uses: actions/upload-artifact@v4
@@ -77,7 +77,7 @@ jobs:
 
       - name: Run Tests
         run: |
-          python -m pytest ../${{ matrix.package}} --cov=pygsdata
+          python -m pytest ../${{ matrix.package}}
 
       - name: Upload coverage data
         uses: actions/upload-artifact@v4
