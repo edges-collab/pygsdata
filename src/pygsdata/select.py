@@ -50,7 +50,6 @@ def select_freqs(
     *,
     freq_range: FreqRangeType | None = None,
     indx: np.ndarray | None = None,
-    **kwargs,
 ) -> GSData:
     """Select a subset of the frequency channels."""
     mask = freq_selector(data.freqs, freq_range=freq_range, indx=indx)
