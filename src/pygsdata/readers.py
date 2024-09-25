@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import pickle
+import warnings
 from pathlib import Path
 from typing import Any
 
@@ -80,10 +81,22 @@ class _GSH5Readers:
 
         telescope = Telescope.from_hdf5(meta["telescope"])
         loads = [x.decode() for x in meta["loads"][()]]
-        times = meta["times"][()]
 
+        times = meta["times"][()]
         times = Time(times, format="jd", location=telescope.location)
 
+        if "time_ranges" in meta:
+            time_ranges = meta["time_ranges"][()]
+            time_ranges = Time(time_ranges, format="jd", location=telescope.location)
+        else:
+            time_ranges = None
+            warnings.warn(
+                "You wrote this file with a buggy version of pygsdata that did not "
+                "include time_ranges and lst_ranges in the file. The time_ranges and "
+                "lst_ranges in your object will be set to the default values given "
+                "your integration time and times.",
+                stacklevel=2,
+            )
         time_mask = None
         time_mask = time_selector(
             times,
@@ -94,6 +107,10 @@ class _GSH5Readers:
             time_mask = np.ones(len(times), dtype=bool)
 
         lsts = Longitude(meta["lsts"][()] * un.hourangle)
+        if "lst_ranges" in meta:
+            lst_ranges = Longitude(meta["lst_ranges"][()] * un.hourangle)
+        else:
+            lst_ranges = None
 
         lst_mask = lst_selector(
             lsts,
@@ -168,4 +185,6 @@ class _GSH5Readers:
             residuals=residuals,
             name=objname,
             effective_integration_time=intg_time,
+            time_ranges=time_ranges,
+            lst_ranges=lst_ranges,
         )

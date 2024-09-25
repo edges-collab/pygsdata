@@ -387,7 +387,7 @@ class GSData:
             # when the file format changes in a backwards-compatible way. The major
             # version is incremented when the file format changes in a way
             # that requires a new reader.
-            fl.attrs["version"] = "2.0"
+            fl.attrs["version"] = "2.1"
 
             meta = fl.create_group("metadata")
             self.telescope.write(meta.create_group("telescope"))
@@ -398,7 +398,9 @@ class GSData:
             )
 
             meta["times"] = self.times.jd
+            meta["time_ranges"] = self.time_ranges.jd
             meta["lsts"] = self.lsts.hour
+            meta["lst_ranges"] = self.lst_ranges.hour
             meta.attrs["data_unit"] = self.data_unit
             meta["loads"] = self.loads
             meta.attrs["history"] = repr(self.history)
