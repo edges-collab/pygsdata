@@ -85,11 +85,12 @@ class _GSH5Readers:
         times = meta["times"][()]
         times = Time(times, format="jd", location=telescope.location)
 
+        extra_kw = {}
         if "time_ranges" in meta:
             time_ranges = meta["time_ranges"][()]
             time_ranges = Time(time_ranges, format="jd", location=telescope.location)
+            extra_kw["time_ranges"] = time_ranges
         else:
-            time_ranges = None
             warnings.warn(
                 "You wrote this file with a buggy version of pygsdata that did not "
                 "include time_ranges and lst_ranges in the file. The time_ranges and "
@@ -109,8 +110,7 @@ class _GSH5Readers:
         lsts = Longitude(meta["lsts"][()] * un.hourangle)
         if "lst_ranges" in meta:
             lst_ranges = Longitude(meta["lst_ranges"][()] * un.hourangle)
-        else:
-            lst_ranges = None
+            extra_kw["lst_ranges"] = lst_ranges
 
         lst_mask = lst_selector(
             lsts,
@@ -185,6 +185,5 @@ class _GSH5Readers:
             residuals=residuals,
             name=objname,
             effective_integration_time=intg_time,
-            time_ranges=time_ranges,
-            lst_ranges=lst_ranges,
+            **extra_kw,
         )
