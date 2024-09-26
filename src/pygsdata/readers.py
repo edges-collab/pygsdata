@@ -137,7 +137,7 @@ class _GSH5Readers:
         )
 
         auxiliary_measurements = {
-            name: fl["auxiliary_measurements"][name][:]
+            name: fl["auxiliary_measurements"][name][time_mask]
             for name in fl["auxiliary_measurements"]
         } or None
 
