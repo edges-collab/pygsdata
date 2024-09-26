@@ -176,8 +176,10 @@ class History:
     @classmethod
     def from_repr(cls, repr_string: str):
         """Create a History object from a string representation."""
-        d = yaml.load(repr_string, Loader=yaml.FullLoader)
-        return cls(stamps=[Stamp.from_yaml_dict(s) for s in d])
+        if d := yaml.load(repr_string, Loader=yaml.FullLoader):
+            return cls(stamps=[Stamp.from_yaml_dict(s) for s in d])
+        else:
+            return cls()
 
     def add(self, stamp: Stamp | dict | tuple[Stamp] | tuple[dict] | Self):
         """Add a stamp to the history."""
