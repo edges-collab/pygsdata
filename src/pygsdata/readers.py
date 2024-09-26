@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import pickle
+import warnings
 from pathlib import Path
 from typing import Any
 
@@ -80,8 +81,8 @@ class _GSH5Readers:
 
         telescope = Telescope.from_hdf5(meta["telescope"])
         loads = [x.decode() for x in meta["loads"][()]]
-        times = meta["times"][()]
 
+        times = meta["times"][()]
         times = Time(times, format="jd", location=telescope.location)
 
         time_mask = None
@@ -105,6 +106,23 @@ class _GSH5Readers:
 
         time_mask &= lst_mask
 
+        extra_kw = {}
+        if "time_ranges" in meta:
+            time_ranges = meta["time_ranges"][time_mask]
+            time_ranges = Time(time_ranges, format="jd", location=telescope.location)
+            extra_kw["time_ranges"] = time_ranges
+
+            lst_ranges = Longitude(meta["lst_ranges"][time_mask] * un.hourangle)
+            extra_kw["lst_ranges"] = lst_ranges
+        else:
+            warnings.warn(
+                "You wrote this file with a buggy version of pygsdata that did not "
+                "include time_ranges and lst_ranges in the file. The time_ranges and "
+                "lst_ranges in your object will be set to the default values given "
+                "your integration time and times.",
+                stacklevel=2,
+            )
+
         freqs = un.Quantity(meta["freqs"][:], unit=meta["freqs"].attrs["unit"])
         freq_mask = freq_selector(freqs, **selectors.get("freq_selector", {}))
 
@@ -119,7 +137,7 @@ class _GSH5Readers:
         )
 
         auxiliary_measurements = {
-            name: fl["auxiliary_measurements"][name][:]
+            name: fl["auxiliary_measurements"][name][time_mask]
             for name in fl["auxiliary_measurements"]
         } or None
 
@@ -154,9 +172,9 @@ class _GSH5Readers:
 
         return GSData(
             data=data,
-            times=times,
-            lsts=lsts,
-            freqs=freqs,
+            times=times[time_mask][:, load_mask],
+            lsts=lsts[time_mask][:, load_mask],
+            freqs=freqs[freq_mask],
             data_unit=data_unit,
             loads=loads,
             auxiliary_measurements=auxiliary_measurements,
@@ -168,4 +186,5 @@ class _GSH5Readers:
             residuals=residuals,
             name=objname,
             effective_integration_time=intg_time,
+            **extra_kw,
         )
