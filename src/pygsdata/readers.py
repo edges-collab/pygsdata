@@ -85,19 +85,6 @@ class _GSH5Readers:
         times = meta["times"][()]
         times = Time(times, format="jd", location=telescope.location)
 
-        extra_kw = {}
-        if "time_ranges" in meta:
-            time_ranges = meta["time_ranges"][()]
-            time_ranges = Time(time_ranges, format="jd", location=telescope.location)
-            extra_kw["time_ranges"] = time_ranges
-        else:
-            warnings.warn(
-                "You wrote this file with a buggy version of pygsdata that did not "
-                "include time_ranges and lst_ranges in the file. The time_ranges and "
-                "lst_ranges in your object will be set to the default values given "
-                "your integration time and times.",
-                stacklevel=2,
-            )
         time_mask = None
         time_mask = time_selector(
             times,
@@ -108,9 +95,6 @@ class _GSH5Readers:
             time_mask = np.ones(len(times), dtype=bool)
 
         lsts = Longitude(meta["lsts"][()] * un.hourangle)
-        if "lst_ranges" in meta:
-            lst_ranges = Longitude(meta["lst_ranges"][()] * un.hourangle)
-            extra_kw["lst_ranges"] = lst_ranges
 
         lst_mask = lst_selector(
             lsts,
@@ -121,6 +105,23 @@ class _GSH5Readers:
             lst_mask = np.ones(len(lsts), dtype=bool)
 
         time_mask &= lst_mask
+
+        extra_kw = {}
+        if "time_ranges" in meta:
+            time_ranges = meta["time_ranges"][time_mask]
+            time_ranges = Time(time_ranges, format="jd", location=telescope.location)
+            extra_kw["time_ranges"] = time_ranges
+
+            lst_ranges = Longitude(meta["lst_ranges"][time_mask] * un.hourangle)
+            extra_kw["lst_ranges"] = lst_ranges
+        else:
+            warnings.warn(
+                "You wrote this file with a buggy version of pygsdata that did not "
+                "include time_ranges and lst_ranges in the file. The time_ranges and "
+                "lst_ranges in your object will be set to the default values given "
+                "your integration time and times.",
+                stacklevel=2,
+            )
 
         freqs = un.Quantity(meta["freqs"][:], unit=meta["freqs"].attrs["unit"])
         freq_mask = freq_selector(freqs, **selectors.get("freq_selector", {}))
@@ -171,9 +172,9 @@ class _GSH5Readers:
 
         return GSData(
             data=data,
-            times=times,
-            lsts=lsts,
-            freqs=freqs,
+            times=times[time_mask][:, load_mask],
+            lsts=lsts[time_mask][:, load_mask],
+            freqs=freqs[freq_mask],
             data_unit=data_unit,
             loads=loads,
             auxiliary_measurements=auxiliary_measurements,
