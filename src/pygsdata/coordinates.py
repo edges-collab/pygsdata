@@ -62,7 +62,7 @@ def lsts_to_times(
     location
         The location at which the LSTs are defined.
     """
-    ref_lst = ref_time.sidereal_time("apparent")
+    ref_lst = ref_time.sidereal_time("apparent", longitude=location.lon)
     lst_per_sec = lst_to_earth_time(ref_time, location)
     lst_diff = lsts - ref_lst
     sec_diff = apt.TimeDelta(lst_diff.arcsecond / 15 / lst_per_sec, format="sec")
