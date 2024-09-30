@@ -583,7 +583,7 @@ class GSData:
         self,
         filt: str,
         flags: np.ndarray | GSFlag | Path,
-        append_to_file: bool | None = None,
+        append_to_file: bool = False,
     ):
         """Append a set of flags to the object and optionally append them to file.
 
@@ -601,9 +601,6 @@ class GSData:
             raise ValueError(f"Flags for filter '{filt}' already exist")
 
         new = self.update(flags={**self.flags, filt: flags})
-
-        if append_to_file is None:
-            append_to_file = new.filename is not None and new._file_appendable
 
         if append_to_file and (new.filename is None or not new._file_appendable):
             raise ValueError(
