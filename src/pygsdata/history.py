@@ -21,7 +21,7 @@ def _default_constructor(loader, tag_suffix, node):
     return f"{tag_suffix}: {node.value}"
 
 
-yaml.add_multi_constructor("", _default_constructor)
+yaml.add_multi_constructor("", _default_constructor, yaml.FullLoader)
 
 
 @hickleable()
