@@ -60,7 +60,11 @@ def concat(
         kw["lsts"] = np.concatenate([d.lsts for d in data], axis=0)
         kw["time_ranges"] = time_concat([d.time_ranges for d in data], axis=0)
         kw["lst_ranges"] = np.concatenate([d.lst_ranges for d in data], axis=0)
-        kw["auxiliary_measurements"] = vstack([d.auxiliary_measurements for d in data])
+        kw["auxiliary_measurements"] = (
+            vstack([d.auxiliary_measurements for d in data])
+            if data[0].auxiliary_measurements is not None
+            else None
+        )
         kw["effective_integration_time"] = np.concatenate(
             [d.effective_integration_time for d in data], axis=-1
         )
