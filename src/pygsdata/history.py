@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import contextlib
 import datetime
+import warnings
 from importlib.metadata import PackageNotFoundError, version
 
 import yaml
@@ -116,6 +117,7 @@ class Stamp:
     def from_repr(cls, repr_string: str):
         """Create a Stamp object from a string representation."""
         dct = yaml.load(repr_string, Loader=yaml.FullLoader)
+
         return cls.from_yaml_dict(dct)
 
     @classmethod
@@ -183,6 +185,18 @@ class History:
     @classmethod
     def from_repr(cls, repr_string: str):
         """Create a History object from a string representation."""
+        try:
+            d = yaml.load(repr_string, Loader=yaml.FullLoader)
+        except yaml.constructor.ConstructorError as e:
+            warnings.warn(
+                (
+                    f"History was not readable, with error message {e}. "
+                    "Returning empty history."
+                ),
+                stacklevel=2,
+            )
+
+            return cls()
         if d := yaml.load(repr_string, Loader=yaml.FullLoader):
             return cls(stamps=[Stamp.from_yaml_dict(s) for s in d])
         else:
