@@ -3,6 +3,7 @@
 from datetime import datetime
 
 import pytest
+import yaml
 
 from pygsdata import History, Stamp
 
@@ -57,3 +58,17 @@ def test_from_yaml_roundtrip():
     s2 = Stamp.from_repr(xx)
 
     assert s2 == s
+
+
+def test_default_constructor():
+    """Test that unknown tags are loaded ok."""
+    unknown_tag = "!ANewTag 3.0"
+    thing = yaml.load(unknown_tag, Loader=yaml.FullLoader)
+    assert thing == "!ANewTag: 3.0"
+
+
+def test_constructing_history_from_non_stamps():
+    """Test that constructing a history from non-stamps fails."""
+    h = History()
+    with pytest.raises(TypeError, match="stamp must be a Stamp or a dictionary"):
+        h.add((3, 4))

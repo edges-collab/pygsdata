@@ -49,14 +49,6 @@ jobs:
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-        #   - name: Upload coverage data
-        # uses: actions/upload-artifact@v4
-        # with:
-        #   name: coverage-data-tests-${{ matrix.python-version }}-${{ matrix.os }}
-        #   path: ".coverage.*"
-        #   if-no-files-found: error
-        #   include-hidden-files: true
-
   downstream:
     env:
       PYTHON: 3.11
@@ -92,46 +84,3 @@ jobs:
       - name: Run Tests
         run: |
           coverage run -m pytest ../${{ matrix.package}}
-
-      # - name: Upload coverage data
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: coverage-data-downstream-${{ matrix.package }}
-      #     path: ".coverage.*"
-      #     if-no-files-found: error
-      #     include-hidden-files: true
-
-  # codecov:
-  #   needs: [tests]
-  #   name: Codecov Reporting
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v4
-
-  #     - name: Download coverage data.
-  #       uses: actions/download-artifact@v4
-  #       with:
-  #         pattern: coverage-data-*
-  #         merge-multiple: true
-
-  #     - uses: actions/setup-python@v5
-  #       with:
-  #         python-version: 3.11
-
-  #     - name: Install coverage
-  #       run: pip install coverage
-
-  #     - run: pip install .[dev]
-
-  #     - name: Combine/Report
-  #       run: |
-  #         coverage combine
-  #         coverage xml
-
-  #     - uses: codecov/codecov-action@v4
-  #       with:
-  #         fail_ci_if_error: true
-  #         verbose: true
-  #         file: ./coverage.xml
-  #       env:
-  #         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

@@ -45,6 +45,7 @@ docs = [
     "myst-parser",
     "numpydoc",
     "nbsphinx",
+    "ipython",
 ]
 tests = [
     "pytest",
