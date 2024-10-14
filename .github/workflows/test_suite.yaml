@@ -40,12 +40,15 @@ jobs:
       - name: Show Files
         run: |
           ls -al
+      - name: coverage xml
+        run: |
+          coverage xml -o coverage.xml
 
       - uses: codecov/codecov-action@v4
         with:
           fail_ci_if_error: true
           verbose: true
-          # file: ./coverage.xml
+          file: ./coverage.xml
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
