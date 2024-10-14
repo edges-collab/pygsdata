@@ -46,6 +46,7 @@ docs = [
     "numpydoc",
     "nbsphinx",
     "ipython",
+    "sphinx-click",
 ]
 tests = [
     "pytest",
