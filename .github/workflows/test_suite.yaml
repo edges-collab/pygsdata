@@ -33,16 +33,13 @@ jobs:
       - name: Setup Environment
         run: |
           pip install -U coverage
-          pip install -e .[dev]
+          pip install .[dev]
       - name: Run Tests
         run: |
-          coverage run -m pytest -n auto
+          pytest -n auto --cov=pygsdata --cov-report=xml
       - name: Show Files
         run: |
           ls -al
-      - name: coverage xml
-        run: |
-          coverage xml -o coverage.xml
 
       - uses: codecov/codecov-action@v4
         with:

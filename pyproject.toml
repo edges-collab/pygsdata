@@ -44,6 +44,7 @@ docs = [
     "furo",
     "myst-parser",
     "numpydoc",
+    "nbsphinx",
 ]
 tests = [
     "pytest",
