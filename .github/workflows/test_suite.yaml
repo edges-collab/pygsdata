@@ -33,7 +33,7 @@ jobs:
       - name: Setup Environment
         run: |
           pip install -U coverage
-          pip install .[dev]
+          pip install -e .[dev]
       - name: Run Tests
         run: |
           coverage run -m pytest -n auto
