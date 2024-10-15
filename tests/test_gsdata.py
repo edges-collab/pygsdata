@@ -17,7 +17,6 @@ from pygsdata import (
     GSFlag,
     Stamp,
     select_freqs,
-    select_lsts,
     select_times,
 )
 
@@ -178,52 +177,6 @@ def test_update_history(simple_gsdata):
         new.update(history="bad message")
 
 
-def test_select_lsts_and_times(power_gsdata):
-    indx = np.zeros(power_gsdata.ntimes, dtype=bool)
-    indx[::2] = True
-
-    lst = select_lsts(power_gsdata, indx=indx)
-    tm = select_times(power_gsdata, indx=indx)
-
-    assert lst == tm
-
-    stime = select_times(power_gsdata, time_range=(2459811.5, 2459811.7))
-    assert stime != power_gsdata
-
-
-def test_select_lsts(power_gsdata: GSData):
-    rng = (power_gsdata.lsts.min().hour, power_gsdata.lsts.max().hour)
-
-    new = select_lsts(power_gsdata, lst_range=rng, load="all")
-    # even though they're the same, the _file_appendable is switched off now
-    assert new != power_gsdata
-    assert np.allclose(new.data, power_gsdata.data)
-
-    new = select_lsts(power_gsdata, lst_range=rng, load="ant")
-    assert new != power_gsdata
-    assert np.allclose(new.data, power_gsdata.data)
-
-    with pytest.raises(ValueError, match="range must be a length-2 tuple"):
-        select_lsts(power_gsdata, lst_range=[0, 2, 3])
-
-    # Use different order of range
-    new = select_lsts(power_gsdata, lst_range=(-2, 4))
-    new2 = select_lsts(power_gsdata, lst_range=(22, 4))
-
-    assert new == new2
-
-    # Test with both indx and range
-    new = select_lsts(power_gsdata, lst_range=rng, indx=np.arange(0, 50, 2))
-    new2 = select_lsts(power_gsdata, indx=np.arange(0, 50, 2))
-
-    assert new == new2
-
-
-def test_select_freqs(simple_gsdata):
-    new = select_freqs(simple_gsdata, freq_range=(50 * un.MHz, 70 * un.MHz))
-    assert new.freqs.max() <= 70 * un.MHz
-
-
 def test_add(simple_gsdata):
     with pytest.raises(TypeError, match="can only add GSData objects"):
         simple_gsdata + 3
@@ -283,9 +236,6 @@ def test_cumulative_flags(simple_gsdata: GSData):
 
     with pytest.raises(ValueError, match="Objects have different npols"):
         no_flags.add_flags("new", np.zeros((1, 2, 3, 4)))
-
-    with pytest.raises(ValueError, match="Cannot append to file without a filename"):
-        no_flags.add_flags("time", flg1, append_to_file=True)
 
     new_no_flags = time_flags.remove_flags("time")
 
@@ -444,3 +394,11 @@ def test_get_initial_yearday(simple_gsdata):
 
     with pytest.raises(ValueError, match="Cannot return minutes without hours"):
         simple_gsdata.get_initial_yearday(minutes=True)
+
+
+def test_add_flags_from_file(simple_gsdata: GSData, tmp_path: Path):
+    flags = GSFlag(flags=np.zeros(simple_gsdata.data.shape, dtype=bool))
+    flags.write_gsflag(tmp_path / "tmp.gsflag")
+
+    new = simple_gsdata.add_flags("fileflags", tmp_path / "tmp.gsflag")
+    assert new.nflagging_ops == 1

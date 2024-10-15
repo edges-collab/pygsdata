@@ -1,6 +1,7 @@
 """Tests of the GSFlag object."""
 
 from itertools import product
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -150,6 +151,14 @@ def test_or():
     assert f3.flags.all()
 
 
+def test_or_badtype():
+    f1 = GSFlag(
+        flags=np.zeros((2, 3, 4, 5), dtype=bool), axes=("load", "pol", "time", "freq")
+    )
+    with pytest.raises(TypeError, match="can only 'or' GSFlag objects"):
+        f1 | "not a GSFlag"
+
+
 def test_and():
     f1 = GSFlag(
         flags=np.zeros((2, 3, 4, 5), dtype=bool), axes=("load", "pol", "time", "freq")
@@ -174,6 +183,14 @@ def test_and():
     f2 = GSFlag(flags=np.ones((2,), dtype=bool), axes=("load",))
     f3 = f1 & f2
     assert not f3.flags.any()
+
+
+def test_and_badtype():
+    f1 = GSFlag(
+        flags=np.zeros((2, 3, 4, 5), dtype=bool), axes=("load", "pol", "time", "freq")
+    )
+    with pytest.raises(TypeError, match="can only 'and' GSFlag objects"):
+        f1 & "not a GSFlag"
 
 
 def test_select():
@@ -203,6 +220,20 @@ def test_select():
     assert f2.nloads is None
 
 
+def test_select_bad_axis():
+    f = GSFlag(
+        flags=np.zeros((2, 3, 4, 5), dtype=bool), axes=("load", "pol", "time", "freq")
+    )
+    with pytest.raises(ValueError, match="Axis bad not recognized"):
+        f.select(idx=np.array([0]), axis="bad")
+
+
+def test_select_non_existent_axis():
+    f = GSFlag(flags=np.zeros((2, 3, 4), dtype=bool), axes=("load", "pol", "time"))
+    f2 = f.select(idx=np.array([0]), axis="freq")
+    assert f2 is f
+
+
 def test_any():
     f = GSFlag(
         flags=np.zeros((2, 3, 4, 5), dtype=bool), axes=("load", "pol", "time", "freq")
@@ -212,3 +243,81 @@ def test_any():
     f.flags[0] = True
     assert f.any()
     assert f.any(axis="load").all()
+
+
+def test_bad_filetype():
+    with pytest.raises(ValueError, match="Unrecognized file type"):
+        GSFlag.from_file(Path("my.file"))
+
+    with pytest.raises(ValueError, match="Unrecognized file type"):
+        GSFlag.from_file(Path("my.gsflag"), filetype="unrecognized")
+
+
+class TestOpOnAxis:
+    """Test the op_on_axis functionality."""
+
+    def setup_class(self):
+        """Make a couple of GSFlag instances that we can use in tests."""
+        self.f = GSFlag(
+            flags=np.zeros((2, 3, 4, 5), dtype=bool),
+            axes=("load", "pol", "time", "freq"),
+        )
+        self.g = GSFlag(
+            flags=np.ones((2, 3, 4), dtype=bool), axes=("load", "pol", "time")
+        )
+
+    def test_bad_axis(self):
+        """Test that a good error is raised when specified axis is bad."""
+        with pytest.raises(ValueError, match="Axis bad not recognized"):
+            self.f.op_on_axis(np.any, axis="bad")
+
+    def test_non_existent_axis(self):
+        """Check thatnothing is done when the axis doesn't exist in this data."""
+        gg = self.g.op_on_axis(np.any, axis="freq")
+        assert gg is self.g
+
+    def test_reduce(self):
+        """Test that the axes are reduced appropriately."""
+        """Test that operations that reduce over an axis work."""
+        f = self.f.op_on_axis(np.any, axis="freq")
+        assert f.axes == self.f.axes[:-1]
+
+
+class TestConcat:
+    """Test the concat functionality."""
+
+    def setup_class(self):
+        """Set the class up."""
+        self.f1 = GSFlag(
+            flags=np.zeros((2, 4, 5), dtype=bool), axes=("load", "time", "freq")
+        )
+        self.f2 = GSFlag(
+            flags=np.ones((2, 4, 5), dtype=bool), axes=("load", "time", "freq")
+        )
+
+    def test_bad_other(self):
+        """Test that concatenation with something other than a GSFlag fails."""
+        with pytest.raises(TypeError, match="can only concatenate GSFlag objects"):
+            self.f1.concat(3, axis="freq")
+
+    def test_non_iterable_concat(self):
+        """Check concatting non-iterable GSFlag."""
+        new = self.f1.concat(self.f2, axis="freq")
+        assert new.nfreqs == self.f1.nfreqs + self.f2.nfreqs
+
+    def test_iterable_concat(self):
+        """Check concatenation of list."""
+        new = self.f1.concat((self.f2, self.f2), axis="time")
+        assert new.ntimes == self.f1.ntimes + 2 * self.f2.ntimes
+
+    def test_bad_axis(self):
+        """Test that bad axis raises exception."""
+        with pytest.raises(ValueError, match="Axis bad not recognized"):
+            self.f1.concat(self.f2, axis="bad")
+
+    def test_non_existent_axis(self):
+        """Check that non-existent axis raises exception."""
+        with pytest.raises(
+            ValueError, match="Axis pol not present in this GSFlag object"
+        ):
+            self.f1.concat(self.f2, axis="pol")
