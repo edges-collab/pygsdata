@@ -72,3 +72,9 @@ def test_constructing_history_from_non_stamps():
     h = History()
     with pytest.raises(TypeError, match="stamp must be a Stamp or a dictionary"):
         h.add((3, 4))
+
+
+def test_non_imported_constructor():
+    txt = "!!python/name:non.imported.module"
+    with pytest.warns(UserWarning, match="History was not readable"):
+        History.from_repr(txt)
