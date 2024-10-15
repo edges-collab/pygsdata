@@ -215,7 +215,8 @@ class GSData:
     def _loads_validator(self, attribute, value):
         if len(value) != self.data.shape[0]:
             raise ValueError(
-                "loads must have the same length as the number of loads in data"
+                "loads must have the same length as the number of loads in data. Got "
+                f"{len(value)} and {self.data.shape[0]}"
             )
 
         if not all(isinstance(x, str) for x in value):
@@ -600,34 +601,7 @@ class GSData:
         if filt in self.flags:
             raise ValueError(f"Flags for filter '{filt}' already exist")
 
-        new = self.update(flags={**self.flags, filt: flags})
-
-        if append_to_file and (new.filename is None or not new._file_appendable):
-            raise ValueError(
-                "Cannot append to file without a filename specified on the object!"
-            )
-
-        if append_to_file:
-            with h5py.File(new.filename, "a") as fl:
-                try:
-                    np.zeros(fl["data"]["data"].shape) * flags.full_rank_flags
-                except ValueError:
-                    # Can't append to file because it would be inconsistent.
-                    return new
-
-                flg_grp = fl["data"]["flags"]
-
-                names_in_file = flg_grp.attrs.get("names", ())
-
-                new_flags = tuple(k for k in new.flags if k not in names_in_file)
-
-                for name in new_flags:
-                    grp = flg_grp.create_group(name)
-                    hickle.dump(new.flags[name], grp)
-
-                flg_grp.attrs["names"] = tuple(new.flags.keys())
-
-        return new
+        return self.update(flags={**self.flags, filt: flags})
 
     def remove_flags(self, filt: str) -> GSData:
         """Remove flags for a given filter."""
