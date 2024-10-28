@@ -133,7 +133,7 @@ class _GSH5Readers:
 
         load_mask = load_selector(
             loads,
-            **selectors.get("load_selector", {}),
+            **selectors.get("load_selector", {"indx": slice(None)}),
         )
 
         auxiliary_measurements = {

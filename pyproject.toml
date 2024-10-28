@@ -42,7 +42,11 @@ dynamic = ["version"]
 docs = [
     "sphinx",
     "furo",
-    "myst-parser"
+    "myst-parser",
+    "numpydoc",
+    "nbsphinx",
+    "ipython",
+    "sphinx-click",
 ]
 tests = [
     "pytest",
@@ -109,7 +113,7 @@ convention = 'numpy'
 max-complexity = 15
 
 [tool.pytest.ini_options]
-addopts = "--verbose --durations=10 --cov=pygsdata"
+addopts = "--verbose --durations=10 --cov=pygsdata "
 norecursedirs = [
     "dist",
     "build",

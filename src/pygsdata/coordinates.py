@@ -35,11 +35,11 @@ def gha2lst(gha: AngleType) -> AngleType:
     return gha.__class__((gha + const.galactic_centre_lst) % (24 * apu.hourangle))
 
 
-def lst_to_earth_time(time: apt.Time) -> float:
+def lst_to_earth_time(time: apt.Time, location: apc.EarthLocation) -> float:
     """Return a factor to convert one second of earth-measured time to an LST."""
     time2 = time + apt.TimeDelta(1 * apu.s)
-    lst = time.sidereal_time("apparent")
-    lst2 = time2.sidereal_time("apparent")
+    lst = time.sidereal_time("apparent", longitude=location.lon)
+    lst2 = time2.sidereal_time("apparent", longitude=location.lon)
     return (lst2.arcsecond - lst.arcsecond) / 15
 
 
@@ -62,9 +62,8 @@ def lsts_to_times(
     location
         The location at which the LSTs are defined.
     """
-    ref_time.location = location
-    ref_lst = ref_time.sidereal_time("apparent")
-    lst_per_sec = lst_to_earth_time(ref_time)
+    ref_lst = ref_time.sidereal_time("apparent", longitude=location.lon)
+    lst_per_sec = lst_to_earth_time(ref_time, location)
     lst_diff = lsts - ref_lst
     sec_diff = apt.TimeDelta(lst_diff.arcsecond / 15 / lst_per_sec, format="sec")
     return ref_time + sec_diff

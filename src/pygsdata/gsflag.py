@@ -127,10 +127,13 @@ class GSFlag:
         """
         filename = Path(filename)
 
-        if filename.suffix == ".gsflag" or filetype.lower() == "gsflag":
+        if filetype is None:
+            filetype = filename.suffix[1:]  # Remove the leading dot
+
+        if filetype.lower() == "gsflag":
             return cls.read_gsflag(filename)
         else:
-            raise ValueError("Unrecognized file type")
+            raise ValueError(f"Unrecognized file type: {filetype}")
 
     @classmethod
     def read_gsflag(cls, filename: str) -> Self:
@@ -303,10 +306,7 @@ class GSFlag:
         new_flags = self.flags.copy()
         new_flags = op(new_flags, axis=self.axes.index(axis))
 
-        if new_flags.ndim < self.flags.ndim:
-            axes = tuple(ax for ax in self.axes if ax != axis)
-        else:
-            axes = self.axes
+        axes = tuple(ax for ax in self.axes if ax != axis)
 
         return self.update(
             flags=new_flags,
@@ -327,8 +327,11 @@ class GSFlag:
 
     def concat(self, others: GSFlag | Sequence[GSFlag], axis: str) -> GSFlag:
         """Get a new GSFlag by concatenating other flags to this one."""
-        if isinstance(others, GSFlag):
+        if not hasattr(others, "__len__"):
             others = [others]
+
+        if not all(isinstance(o, GSFlag) for o in others):
+            raise TypeError("can only concatenate GSFlag objects")
 
         if axis not in ("load", "pol", "time", "freq"):
             raise ValueError(f"Axis {axis} not recognized")
