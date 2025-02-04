@@ -93,6 +93,7 @@ extend-select = [
 ignore = [
     "DTZ007",   # use %z in strptime
     "A003",     # class attribute shadows python builtin
+    "A005",     # module shadows python builtin
     "B008",     # function call in argument defaults
 ]
 [tool.ruff.lint.per-file-ignores]
@@ -111,6 +112,13 @@ convention = 'numpy'
 
 [tool.ruff.lint.mccabe]
 max-complexity = 15
+
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = [
+    "pygsdata.attrs.npfield",
+    "pygsdata.attrs.timefield",
+    "pygsdata.attrs.lstfield",
+]
 
 [tool.pytest.ini_options]
 addopts = "--verbose --durations=10 --cov=pygsdata "
