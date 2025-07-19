@@ -381,9 +381,23 @@ class GSData:
 
         return concat(datas, concat_axis)
 
-    def write_gsh5(self, filename: str) -> GSData:
+    def write_gsh5(self, filename: str | Path, group: str = "/") -> GSData:
         """Write the data in the GSData object to a GSH5 file."""
-        with h5py.File(filename, "w") as fl:
+        filename = Path(filename)
+        if filename.exists():
+            with h5py.File(filename, "r") as fl:
+                if group in fl:
+                    raise ValueError(
+                        f"group {group} in file {filename} already exists!"
+                    )
+            mode = "a"
+        else:
+            mode = "w"
+
+        with h5py.File(filename, mode) as fl:
+            if group not in fl:
+                fl = fl.create_group(group)
+
             # The GSH5 file version: <major>.<minor>. The minor version is incremented
             # when the file format changes in a backwards-compatible way. The major
             # version is incremented when the file format changes in a way
