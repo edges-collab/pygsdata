@@ -133,7 +133,7 @@ def npfield(
 
     if converter is None:
         converter = array_converter(dtype=dtype, allow_none=not required)
-        
+
     return field(
         eq=cmp_using(_cmp_bool_array if dtype is bool else _cmp_num_array),
         converter=converter,
@@ -190,8 +190,13 @@ def lstfield(
 ):
     """Construct an attrs field for an astropy Time."""
     return _astropy_subclass_field(
-        Longitude, "rad", possible_ndims, shape, validator, 
-        converter=Longitude,**kwargs
+        Longitude,
+        "rad",
+        possible_ndims,
+        shape,
+        validator,
+        converter=Longitude,
+        **kwargs,
     )
 
 
