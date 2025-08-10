@@ -371,7 +371,7 @@ class GSData:
 
             return data
 
-        filename = [filename] if isinstance(filename, (str, Path)) else filename
+        filename = [filename] if isinstance(filename, str | Path) else filename
         datas = [_from_file(pth, reader) for pth in filename]
 
         if len(datas) == 1:
@@ -607,7 +607,7 @@ class GSData:
         """
         if isinstance(flags, np.ndarray):
             flags = GSFlag(flags=flags, axes=("load", "pol", "time", "freq"))
-        elif isinstance(flags, (str, Path)):
+        elif isinstance(flags, str | Path):
             flags = GSFlag.from_file(flags)
 
         flags._check_compat(self)

@@ -15,7 +15,7 @@ from hickleable import hickleable
 try:
     from typing import Self
 except ImportError:
-    from typing_extensions import Self
+    from typing import Self
 
 
 def _default_constructor(loader, tag_suffix, node):
@@ -210,7 +210,7 @@ class History:
         if isinstance(stamp, Stamp):
             return evolve(self, stamps=(*self.stamps, stamp))
 
-        if all(isinstance(s, (Stamp, dict)) for s in stamp):
+        if all(isinstance(s, Stamp | dict) for s in stamp):
             a = self
             for s in stamp:
                 a = a.add(s)

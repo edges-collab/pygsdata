@@ -94,7 +94,7 @@ def test_full_rank_flags(axes):
     f = GSFlag(flags=np.zeros(shape, dtype=bool), axes=axes)
     assert f.full_rank_flags.ndim == 4
 
-    for ax, size in zip(axes, shape):
+    for ax, size in zip(axes, shape, strict=False):
         idx = f._axes.index(ax)
         assert f.full_rank_flags.shape[idx] == size
 

@@ -47,7 +47,7 @@ def read_gsh5(
     filename: str | Path | h5py.File, selectors: dict[str, Any], group: str = "/"
 ) -> GSData:
     """Read a GSH5 file to construct the object."""
-    if isinstance(filename, (str, Path)):
+    if isinstance(filename, str | Path):
         with h5py.File(filename, "r") as fl:
             return read_gsh5(fl[group], selectors)
 

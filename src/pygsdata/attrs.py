@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Callable
+from collections.abc import Callable
 
 import attrs
 import numpy as np
@@ -34,7 +34,7 @@ def shape_validator(shape: tuple[int | None, ...]):
         if len(shape) != len(value.shape):
             raise ValueError(f"{att.name} must have shape {shape}, got {value.shape}")
 
-        for i, (d0, d1) in enumerate(zip(shape, value.shape)):
+        for i, (d0, d1) in enumerate(zip(shape, value.shape, strict=False)):
             if d0 is not None and d0 != d1:
                 raise ValueError(
                     f"Axis {i} of {att.name} must have size {d0}, got {d1}"
@@ -54,7 +54,7 @@ def array_converter(dtype=None, allow_none=False):
             else:
                 return None
 
-        if not isinstance(x, (Quantity, Time, Longitude)):
+        if not isinstance(x, Quantity | Time | Longitude):
             return np.asarray(x, dtype=dtype)
         else:
             return x
