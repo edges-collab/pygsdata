@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from pathlib import Path
+from typing import Self
 
 import attrs
 import h5py
@@ -14,7 +15,6 @@ import numpy as np
 from astropy import units as un
 from astropy.coordinates import Angle, EarthLocation
 from attrs import field
-from typing_extensions import Self
 
 from .attrs import unit_validator
 from .types import TimeType
@@ -94,11 +94,11 @@ class Telescope:
 
     def write(self, fname: str | Path | h5py.File | h5py.Group):
         """Write the telescope to an HDF5 file."""
-        if isinstance(fname, (str, Path)):
+        if isinstance(fname, str | Path):
             with h5py.File(fname, "a") as fl:
                 self.write(fl)
 
-        elif isinstance(fname, (h5py.File, h5py.Group)):
+        elif isinstance(fname, h5py.File | h5py.Group):
             if not fname.name.endswith("/telescope"):
                 grp = fname.create_group("telescope")
             else:
@@ -118,11 +118,11 @@ class Telescope:
     @classmethod
     def from_hdf5(cls, fname: str | Path | h5py.File | h5py.Group) -> Self:
         """Read a telescope from an HDF5 file."""
-        if isinstance(fname, (str, Path)):
+        if isinstance(fname, str | Path):
             with h5py.File(fname, "r") as fl:
                 return Telescope.from_hdf5(fl)
 
-        elif isinstance(fname, (h5py.File, h5py.Group)):
+        elif isinstance(fname, h5py.File | h5py.Group):
             grp = fname["telescope"] if not fname.name.endswith("/telescope") else fname
 
             # Check the file-format version

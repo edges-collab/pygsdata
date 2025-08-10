@@ -44,13 +44,12 @@ def gsdata_reader(
 
 @gsdata_reader(select_on_read=True, formats=["gsh5"])
 def read_gsh5(
-    filename: str | Path | h5py.File,
-    selectors: dict[str, Any],
+    filename: str | Path | h5py.File, selectors: dict[str, Any], group: str = "/"
 ) -> GSData:
     """Read a GSH5 file to construct the object."""
-    if isinstance(filename, (str, Path)):
+    if isinstance(filename, str | Path):
         with h5py.File(filename, "r") as fl:
-            return read_gsh5(fl, selectors)
+            return read_gsh5(fl[group], selectors)
 
     version = filename.attrs.get("version", "1.0")
 
@@ -178,7 +177,7 @@ class _GSH5Readers:
             data_unit=data_unit,
             loads=loads,
             auxiliary_measurements=auxiliary_measurements,
-            filename=fl.filename,
+            filename=fl.file.filename,
             nsamples=nsamples,
             flags=flags,
             history=history,

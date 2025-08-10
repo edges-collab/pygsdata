@@ -27,7 +27,9 @@ def data_powerlaw(freqs, lsts, shape):
 def flag_constant(flagged: bool = False, axes: tuple[str] = ("time",)):
     def inner(shape):
         s = tuple(
-            sh for ax, sh in zip(("load", "pol", "time", "freq"), shape) if ax in axes
+            sh
+            for ax, sh in zip(("load", "pol", "time", "freq"), shape, strict=False)
+            if ax in axes
         )
         flags = np.ones(s, dtype=bool) if flagged else np.zeros(s, dtype=bool)
         return GSFlag(flags=flags, axes=axes)

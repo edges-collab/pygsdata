@@ -163,7 +163,7 @@ def lst_selector(
         if len(lst_range) != 2:
             raise ValueError("range must be a length-2 tuple")
 
-        if not isinstance(lst_range[0], (Longitude, Angle)):
+        if not isinstance(lst_range[0], Longitude | Angle):
             lst_range = (
                 lst_range[0] % 24 * un.hourangle,
                 lst_range[1] % 24 * un.hourangle,

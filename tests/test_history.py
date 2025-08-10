@@ -1,6 +1,6 @@
 """Test the history module."""
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import pytest
 import yaml
@@ -33,7 +33,7 @@ def test_history():
         history["not_a_key"]
 
     with pytest.raises(KeyError):
-        history[datetime.now()]
+        history[datetime.now() + timedelta(hours=1)]
 
     with pytest.raises(KeyError):
         history[(1, 2)]

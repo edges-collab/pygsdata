@@ -371,7 +371,7 @@ class GSData:
 
             return data
 
-        filename = [filename] if isinstance(filename, (str, Path)) else filename
+        filename = [filename] if isinstance(filename, str | Path) else filename
         datas = [_from_file(pth, reader) for pth in filename]
 
         if len(datas) == 1:
@@ -381,9 +381,23 @@ class GSData:
 
         return concat(datas, concat_axis)
 
-    def write_gsh5(self, filename: str) -> GSData:
+    def write_gsh5(self, filename: str | Path, group: str = "/") -> GSData:
         """Write the data in the GSData object to a GSH5 file."""
-        with h5py.File(filename, "w") as fl:
+        filename = Path(filename)
+        if filename.exists():
+            with h5py.File(filename, "r") as fl:
+                if group in fl:
+                    raise ValueError(
+                        f"group {group} in file {filename} already exists!"
+                    )
+            mode = "a"
+        else:
+            mode = "w"
+
+        with h5py.File(filename, mode) as fl:
+            if group not in fl:
+                fl = fl.create_group(group)
+
             # The GSH5 file version: <major>.<minor>. The minor version is incremented
             # when the file format changes in a backwards-compatible way. The major
             # version is incremented when the file format changes in a way
@@ -593,7 +607,7 @@ class GSData:
         """
         if isinstance(flags, np.ndarray):
             flags = GSFlag(flags=flags, axes=("load", "pol", "time", "freq"))
-        elif isinstance(flags, (str, Path)):
+        elif isinstance(flags, str | Path):
             flags = GSFlag.from_file(flags)
 
         flags._check_compat(self)

@@ -259,7 +259,7 @@ class TestTimeField:
         class Test:
             time = pga.lstfield()
 
-        with pytest.raises(TypeError, match="'time' must be"):
+        with pytest.raises(TypeError, match="Longitude instances require units"):
             Test(time=3)
 
 

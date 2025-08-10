@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import datetime
 import functools
-from typing import Callable, Literal
+from collections.abc import Callable
+from typing import Literal
 
 import attrs
 
@@ -21,7 +22,7 @@ class _Register:
     def __call__(
         self, data: GSData, *args, message: str = "", **kw
     ) -> GSData | list[GSData]:
-        now = datetime.datetime.now(tz=datetime.timezone.utc)
+        now = datetime.datetime.now(tz=datetime.UTC)
         newdata = self.func(data, *args, **kw)
 
         history = {
