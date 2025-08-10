@@ -102,6 +102,7 @@ def npfield(
     unit: un.Unit | None | str = None,
     validator: list | None | Callable = None,
     required: bool | None = None,
+    converter: Callable | None = None,
     **kwargs,
 ):
     """Construct an attrs field for a numpy array."""
@@ -130,9 +131,12 @@ def npfield(
         else:
             kwargs["validator"] = attrs.validators.optional(validator)
 
+    if converter is None:
+        converter = array_converter(dtype=dtype, allow_none=not required)
+        
     return field(
         eq=cmp_using(_cmp_bool_array if dtype is bool else _cmp_num_array),
-        converter=array_converter(dtype=dtype, allow_none=not required),
+        converter=converter,
         **kwargs,
     )
 
@@ -186,7 +190,8 @@ def lstfield(
 ):
     """Construct an attrs field for an astropy Time."""
     return _astropy_subclass_field(
-        Longitude, "rad", possible_ndims, shape, validator, **kwargs
+        Longitude, "rad", possible_ndims, shape, validator, 
+        converter=Longitude,**kwargs
     )
 
 
