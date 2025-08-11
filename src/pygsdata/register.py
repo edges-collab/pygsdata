@@ -28,6 +28,23 @@ def _register(func: callable, kind: RegKind) -> callable:
     ):
         raise TypeError(
             f"{func.__name__} must accept a GSData object as the first argument"
+    annotation = sig.parameters[first_param].annotation
+    # Handle string annotations (forward references)
+    if isinstance(annotation, str):
+        try:
+            annotation = eval(annotation, func.__globals__)
+        except Exception:
+            pass
+    allowed = False
+    if annotation is GSData:
+        allowed = True
+    elif get_origin(annotation) in (list, Sequence):
+        args = get_args(annotation)
+        if args and args[0] is GSData:
+            allowed = True
+    if not allowed:
+        raise TypeError(
+            f"{func.__name__} must accept a GSData object or Sequence[GSData] as the first argument"
         )
 
     @functools.wraps(func)
