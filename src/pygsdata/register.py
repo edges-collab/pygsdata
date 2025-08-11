@@ -1,10 +1,11 @@
 """Register functions as processors for GSData objects."""
 
+import contextlib
 import datetime
 import functools
 import inspect
 from collections.abc import Callable, Sequence
-from typing import Literal
+from typing import Literal, get_args, get_origin
 
 import attrs
 
@@ -20,21 +21,11 @@ def _register(func: callable, kind: RegKind) -> callable:
     sig = inspect.signature(func)
     first_param = next(iter(sig.parameters.keys()))
 
-    if sig.parameters[first_param].annotation not in (
-        GSData,
-        "GSData",
-        Sequence[GSData],
-        "Sequence[GSData]",
-    ):
-        raise TypeError(
-            f"{func.__name__} must accept a GSData object as the first argument"
     annotation = sig.parameters[first_param].annotation
     # Handle string annotations (forward references)
     if isinstance(annotation, str):
-        try:
+        with contextlib.suppress(Exception):
             annotation = eval(annotation, func.__globals__)
-        except Exception:
-            pass
     allowed = False
     if annotation is GSData:
         allowed = True
@@ -44,7 +35,8 @@ def _register(func: callable, kind: RegKind) -> callable:
             allowed = True
     if not allowed:
         raise TypeError(
-            f"{func.__name__} must accept a GSData object or Sequence[GSData] as the first argument"
+            f"{func.__name__} must accept a GSData object or "
+            "Sequence[GSData] as the first argument"
         )
 
     @functools.wraps(func)
