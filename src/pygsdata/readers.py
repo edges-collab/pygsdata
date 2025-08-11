@@ -1,7 +1,5 @@
 """Module defining the readers for the different file formats."""
 
-from __future__ import annotations
-
 import pickle
 import warnings
 from pathlib import Path

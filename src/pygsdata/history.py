@@ -1,7 +1,5 @@
 """Classes for defining the history of a GSData / GSFlag object."""
 
-from __future__ import annotations
-
 import contextlib
 import datetime
 import warnings
@@ -121,7 +119,7 @@ class Stamp:
         return cls.from_yaml_dict(dct)
 
     @classmethod
-    def from_yaml_dict(cls, d: dict) -> Stamp:
+    def from_yaml_dict(cls, d: dict) -> Self:
         """Create a Stamp object from a dictionary representing a history record."""
         try:
             d["timestamp"] = datetime.datetime.strptime(

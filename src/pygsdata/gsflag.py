@@ -1,7 +1,5 @@
 """An object to hold flag information."""
 
-from __future__ import annotations
-
 from collections.abc import Sequence
 from functools import cached_property
 from pathlib import Path
@@ -220,7 +218,7 @@ class GSFlag:
                 f"this={self.nfreqs} and that={other.nfreqs}"
             )
 
-    def __or__(self, other: GSFlag) -> Self:
+    def __or__(self, other: Self) -> Self:
         """Take the product of two GSFlag objects and return a new one."""
         if not isinstance(other, GSFlag):
             raise TypeError("can only 'or' GSFlag objects")
@@ -238,7 +236,7 @@ class GSFlag:
             filename=None,
         )
 
-    def __and__(self, other: GSFlag) -> Self:
+    def __and__(self, other: Self) -> Self:
         """Take the product of two GSFlag objects and return a new one."""
         if not isinstance(other, GSFlag):
             raise TypeError("can only 'and' GSFlag objects")
@@ -325,7 +323,7 @@ class GSFlag:
         """Return True if any of the flags are True."""
         return self.flags.all() if axis is None else self.op_on_axis(np.all, axis)
 
-    def concat(self, others: GSFlag | Sequence[GSFlag], axis: str) -> GSFlag:
+    def concat(self, others: Self | Sequence[Self], axis: str) -> Self:
         """Get a new GSFlag by concatenating other flags to this one."""
         if not hasattr(others, "__len__"):
             others = [others]

@@ -3,10 +3,11 @@
 import pytest
 
 from pygsdata import gsregister
+from pygsdata.gsdata import GSData
 
 
 @gsregister("calibrate")
-def bad_gsfunc(data):
+def bad_gsfunc(data: GSData) -> GSData:
     return 3
 
 
