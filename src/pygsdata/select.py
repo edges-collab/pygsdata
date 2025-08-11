@@ -1,7 +1,5 @@
 """Selection functions for GSData objects."""
 
-from __future__ import annotations
-
 import warnings
 
 import numpy as np

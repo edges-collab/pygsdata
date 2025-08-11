@@ -1,7 +1,5 @@
 """Concatenation methods for GSData objects."""
 
-from __future__ import annotations
-
 import functools
 import operator
 import warnings

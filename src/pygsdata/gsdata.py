@@ -6,14 +6,12 @@ antenna, adding self-consistent metadata along with the data itself, and providi
 key methods for data selection, I/O, and analysis.
 """
 
-from __future__ import annotations
-
 import logging
 import warnings
 from collections.abc import Iterable
 from functools import cached_property
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, Self
 
 import astropy.units as un
 import h5py
@@ -331,7 +329,7 @@ class GSData:
         selectors: dict[str, Any] | None = None,
         concat_axis: Literal["load", "pol", "time", "freq"] | None = None,
         **kw,
-    ) -> GSData:
+    ) -> Self:
         """Create a GSData instance from a file.
 
         This method attempts to auto-detect the file type and read it.
@@ -381,7 +379,7 @@ class GSData:
 
         return concat(datas, concat_axis)
 
-    def write_gsh5(self, filename: str | Path, group: str = "/") -> GSData:
+    def write_gsh5(self, filename: str | Path, group: str = "/") -> Self:
         """Write the data in the GSData object to a GSH5 file."""
         filename = Path(filename)
         if filename.exists():
@@ -459,7 +457,7 @@ class GSData:
 
         return evolve(self, history=history, **kwargs)
 
-    def __add__(self, other: GSData) -> GSData:
+    def __add__(self, other: Self) -> Self:
         """Add two GSData objects."""
         if not isinstance(other, GSData):
             raise TypeError("can only add GSData objects")
@@ -617,7 +615,7 @@ class GSData:
 
         return self.update(flags={**self.flags, filt: flags})
 
-    def remove_flags(self, filt: str) -> GSData:
+    def remove_flags(self, filt: str) -> Self:
         """Remove flags for a given filter."""
         if filt not in self.flags:
             raise ValueError(f"No flags for filter '{filt}'")

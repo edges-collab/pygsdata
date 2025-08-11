@@ -1,7 +1,5 @@
 """Utilities for attrs used in GSData."""
 
-from __future__ import annotations
-
 from collections.abc import Callable
 
 import attrs
@@ -46,7 +44,7 @@ def shape_validator(shape: tuple[int | None, ...]):
 def array_converter(dtype=None, allow_none=False):
     """Construct an attrs converter to make arrays from other iterables."""
 
-    def _converter(x: np.ArrayLike | Quantity | None):
+    def _converter(x: np.typing.ArrayLike | Quantity | None):
         """Convert an array to a numpy array."""
         if x is None:
             if not allow_none:

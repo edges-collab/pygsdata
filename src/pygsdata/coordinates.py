@@ -1,7 +1,5 @@
 """Functions for working with earth/sky coordinates."""
 
-from __future__ import annotations
-
 import numpy as np
 from astropy import coordinates as apc
 from astropy import time as apt

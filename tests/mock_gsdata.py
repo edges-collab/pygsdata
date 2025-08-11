@@ -1,7 +1,5 @@
 """Create very simple mock GSData objects for testing purposes."""
 
-from __future__ import annotations
-
 import numpy as np
 from astropy import units as un
 from astropy.time import Time
