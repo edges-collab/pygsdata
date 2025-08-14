@@ -62,10 +62,6 @@ class Stamp:
     def _versions_default(self):
         out = {}
         for pkg in (
-            "edges-cal",
-            "edges-io",
-            "edges-analysis",
-            "read_acq",
             "numpy",
             "astropy",
             "pygsdata",
@@ -73,6 +69,15 @@ class Stamp:
             with contextlib.suppress(PackageNotFoundError):
                 out[pkg] = version(pkg)
         return out
+
+    def __getstate__(self) -> dict:
+        """Get the state for serialization."""
+        return self._to_yaml_dict()
+
+    def __setstate__(self, state: dict):
+        """Set the state for deserialization."""
+        state["timestamp"] = datetime.datetime.fromisoformat(state["timestamp"])
+        self.__dict__.update(state)
 
     def _to_yaml_dict(self):
         dct = asdict(self)

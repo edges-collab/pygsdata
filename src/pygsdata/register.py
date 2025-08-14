@@ -1,7 +1,6 @@
 """Register functions as processors for GSData objects."""
 
 import contextlib
-import datetime
 import functools
 import inspect
 from collections.abc import Callable, Sequence
@@ -11,6 +10,7 @@ import attrs
 
 from .gsdata import GSData
 from .gsflag import GSFlag
+from .history import Stamp
 
 GSDATA_PROCESSORS = {}
 
@@ -41,15 +41,13 @@ def _register(func: callable, kind: RegKind) -> callable:
 
     @functools.wraps(func)
     def wrapper(data: GSData, *args, message: str = "", **kw) -> GSData | list[GSData]:
-        now = datetime.datetime.now(tz=datetime.UTC)
         newdata = func(data, *args, **kw)
 
-        history = {
-            "message": message,
-            "function": func.__name__,
-            "parameters": kw,
-            "timestamp": now.strftime("%Y-%m-%d %H:%M:%S"),
-        }
+        history = Stamp(
+            message=message,
+            function=func.__name__,
+            parameters=kw,
+        )
 
         kw = {"history": history}
 
