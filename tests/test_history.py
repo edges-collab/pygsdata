@@ -1,6 +1,6 @@
 """Test the history module."""
 
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 import pytest
 import yaml
@@ -53,6 +53,15 @@ def test_str_and_pretty():
 
 def test_from_yaml_roundtrip():
     s = Stamp(message="dummy", parameters={"a": 1, "b": "hey"})
+    xx = repr(s)
+
+    s2 = Stamp.from_repr(xx)
+
+    assert s2 == s
+
+
+def test_from_yaml_roundtrip_timezon():
+    s = Stamp(message="dummy", timestamp=datetime.now(tz=UTC))
     xx = repr(s)
 
     s2 = Stamp.from_repr(xx)
