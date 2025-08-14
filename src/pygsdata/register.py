@@ -48,7 +48,7 @@ def _register(func: callable, kind: RegKind) -> callable:
             "message": message,
             "function": func.__name__,
             "parameters": kw,
-            "timestamp": now,
+            "timestamp": now.strftime("%Y-%m-%d %H:%M:%S"),
         }
 
         kw = {"history": history}
