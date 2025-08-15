@@ -477,7 +477,13 @@ class GSData:
             aux.update(self.auxiliary_measurements)
             aux = QTable(aux)
             if any(
-                k in other.auxiliary_measurements for k in self.auxiliary_measurements
+                k in other.auxiliary_measurements.columns
+                for k in self.auxiliary_measurements.columns
+            ) and not all(
+                np.allclose(
+                    other.auxiliary_measurements[k], self.auxiliary_measurements[k]
+                )
+                for k in self.auxiliary_measurements.columns
             ):
                 warnings.warn(
                     "Overlapping auxiliary measurements exist between objects,"

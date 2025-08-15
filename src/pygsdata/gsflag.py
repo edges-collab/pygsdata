@@ -31,7 +31,7 @@ class _GSDataSized(Protocol):
 @hickleable()
 @define(slots=False)
 class GSFlag:
-    """A generic container for Global-Signal data.
+    """A generic container for Global-Signal flags data.
 
     Parameters
     ----------

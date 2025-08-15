@@ -335,6 +335,12 @@ def test_add_errors(
     new = simple_gsdata_noaux + simple_gsdata
     assert new.auxiliary_measurements is not None
 
+    flagged_gsdata = flagged_gsdata.update(
+        auxiliary_measurements={
+            k: flagged_gsdata.auxiliary_measurements[k] + 3
+            for k in flagged_gsdata.auxiliary_measurements.columns
+        }
+    )
     with pytest.warns(UserWarning, match="Overlapping auxiliary measurements exist"):
         new = simple_gsdata + flagged_gsdata
 
