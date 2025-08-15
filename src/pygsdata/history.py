@@ -126,14 +126,7 @@ class Stamp:
     @classmethod
     def from_yaml_dict(cls, d: dict) -> Self:
         """Create a Stamp object from a dictionary representing a history record."""
-        try:
-            d["timestamp"] = datetime.datetime.strptime(
-                d["timestamp"], "%Y-%m-%dT%H:%M:%S.%f"
-            )
-        except ValueError:
-            d["timestamp"] = datetime.datetime.strptime(
-                d["timestamp"], "%Y-%m-%dT%H:%M:%S.%f%z"
-            )
+        d["timestamp"] = datetime.datetime.fromisoformat(d["timestamp"])
         return cls(**d)
 
 
@@ -150,7 +143,6 @@ class History:
 
     def __attrs_post_init__(self):
         """Define the timestamps as keys."""
-        self._keysdates = tuple(stamp.timestamp for stamp in self.stamps)
         self._keystring = tuple(stamp.timestamp.isoformat() for stamp in self.stamps)
 
     def __repr__(self):
@@ -170,16 +162,15 @@ class History:
         """Return the Stamp object corresponding to the given key."""
         if isinstance(key, int):
             return self.stamps[key]
-        elif isinstance(key, str):
+        elif isinstance(key, str | datetime.datetime):
+            if isinstance(key, datetime.datetime):
+                key = key.isoformat()
+
             if key not in self._keystring:
                 raise KeyError(
                     f"{key} not in history. Make sure the key is in ISO format."
                 )
             return self.stamps[self._keystring.index(key)]
-        elif isinstance(key, datetime.datetime):
-            if key not in self._keysdates:
-                raise KeyError(f"{key} not in history")
-            return self.stamps[self._keysdates.index(key)]
         else:
             raise KeyError(
                 f"{key} not a valid key. Must be int, ISO date string, or datetime."

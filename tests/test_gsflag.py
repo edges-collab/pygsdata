@@ -59,6 +59,7 @@ def test_none_axes():
 def test_read_write_loop(tmp_path, axes):
     shape = tuple(range(2, 2 + len(axes)))
     f = GSFlag(flags=np.zeros(shape, dtype=bool), axes=axes)
+
     f.write_gsflag(tmp_path / "test.gsflag")
     new_f = GSFlag.from_file(tmp_path / "test.gsflag")
     assert f == new_f
