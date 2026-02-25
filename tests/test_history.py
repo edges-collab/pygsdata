@@ -87,3 +87,14 @@ def test_non_imported_constructor():
     txt = "!!python/name:non.imported.module"
     with pytest.warns(UserWarning, match="History was not readable"):
         History.from_repr(txt)
+
+
+def test_non_yamlable_parameter():
+    """Test that non-yamlable parameters are sanitized when creating a history."""
+    s = Stamp(message="dummy", parameters={"a": 1, "b": lambda x: 3})
+    h = History(stamps=(s,))
+
+    h2 = History.from_repr(repr(h))
+
+    assert h2.stamps[0].parameters["a"] == 1
+    assert isinstance(h2.stamps[0].parameters["b"], str)

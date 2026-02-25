@@ -82,6 +82,16 @@ class Stamp:
     def _to_yaml_dict(self):
         dct = asdict(self)
         dct["timestamp"] = dct["timestamp"].isoformat()
+
+        # For now, sanitize parameters that can't be represented in YAML by converting
+        # them to strings. In the future, we may want to allow for more complex objects
+        # to be represented in YAML.
+        for k, v in dct["parameters"].items():
+            try:
+                yaml.load(yaml.dump(v), Loader=yaml.FullLoader)
+            except Exception:
+                dct["parameters"][k] = str(v)
+
         return dct
 
     def __repr__(self):
