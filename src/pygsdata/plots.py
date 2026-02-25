@@ -4,6 +4,9 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 
+from edges import modeling as mdl
+from matplotlib.colors import Normalize, ScalarMappable
+
 from .gsdata import GSData
 
 mpl.use("agg")
@@ -116,53 +119,65 @@ def plot_waterfall(
     return ax, cb
 
 
-def plot_rms_lst(gsdata_obj, figsave=None):
+def plot_rms_lst(
+    data: GSData, 
+    n_terms: int = 5, 
+    offset: float = 0,
+    **imshow_kwargs,
+):
     """
-    Plot residuals with LST color mapping and RMS vs. LST in subplots.
+    Creates two subplots: 
+    top: freq (x-axis) vs residuals (y-axis) color-coded by LST (hr)
+    bottom: LST (x-axis) vs RMS (y-axis)
 
     Parameters
     ----------
-        gsdata_obj : GSData
+        data : GSData
             The data object containing frequency, LST, and residuals.
-        figsave : str, optional
-            Path to save the figure. If None, the figure is not saved.
+        n_terms : int
+            The number of terms to use in the linlog model.
+        offset : float
+            The offset to add to the plot for each LST.
+        imshow_kwargs : dict
+            Keyword arguments to pass to the imshow function.
 
-    Returns
-    -------
-        fig : matplotlib.figure.Figure
-            The created figure object.
     """
-    offset = 0
     rms = []
-    model_fit_freqs = gsdata_obj.freqs
-    thermal_noise = get_thermal_noise(gsdata_obj)
+    model_fit_freqs = data.freqs
+    thermal_noise = get_thermal_noise(data)
 
     # Create subplots
     fig, axs = plt.subplots(2, 1, figsize=(8, 6), gridspec_kw={"height_ratios": [2, 1]})
 
     # Plot residuals
     ax1 = axs[0]
-    for i in range(len(gsdata_obj.lsts)):
-        model = mdl.LinLog(n_terms=5)
-        LL = model.at(x=model_fit_freqs)
-        res_5terms = LL.fit(ydata=gsdata_obj.data[0, 0, i, :], xdata=model_fit_freqs)
+    residuals = np.zeros((len(data.lsts), len(model_fit_freqs)))
+    if data.residuals is not None:
+        residuals = data.residual
+    else:
+        raise Warning(f"No residuals found in data object. Fitting {n_terms} term linlog model to data.")
+
+        for i in range(len(data.lsts)):
+            model = mdl.LinLog(n_terms=n_terms)
+            linlog_model = model.at(x=model_fit_freqs)
+            residuals[i, :] = linlog_model.fit(ydata=data.data[0, 0, i, :], xdata=model_fit_freqs).residual
 
         # Normalize LSTs for color mapping
         norm = Normalize(vmin=0, vmax=24)
-        color = plt.cm.viridis(norm(gsdata_obj.lsts[i]))
+        color = plt.cm.viridis(norm(data.lsts[i]))
         ax1.plot(
             model_fit_freqs,
-            offset + res_5terms.residual,
+            offset + residuals,
             color=color,
-            label=str(gsdata_obj.lsts[i]),
+            label=str(data.lsts[i]),
         )
 
         # Append RMS
-        rms.append(calculate_rms(res_5terms.residual))
+        rms.append(calculate_rms(residuals))
 
     ax1.set_xlabel("Frequency (MHz)")
     ax1.set_ylabel("Residuals (K)")
-    ax1.set_title("5 term linlog, Averaged")
+    ax1.set_title(f"{n_terms} term linlog, Averaged")
     ax1.grid()
 
     # Add colorbar to the first plot
@@ -175,7 +190,7 @@ def plot_rms_lst(gsdata_obj, figsave=None):
     ax2 = axs[1]
     rms = np.array(rms)
     ax2.errorbar(
-        gsdata_obj.lsts,
+        data.lsts,
         rms,
         yerr=thermal_noise,
         marker="o",
@@ -186,14 +201,9 @@ def plot_rms_lst(gsdata_obj, figsave=None):
     ax2.set_ylabel("RMS (K)")
     ax2.set_xlabel("LST (hr)")
     ax2.grid()
-
     plt.tight_layout()
 
-    if figsave:
-        plt.savefig(figsave)
-
-    plt.show()
-    return fig
+    return axs, cbar
 
 
 def get_thermal_noise(gsdata_obj: GSData, n_terms=20):
