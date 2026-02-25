@@ -1,7 +1,7 @@
 API Reference
 =============
 
-## cosmotile
+## pygsdata
 
 ```{eval-rst}
 .. automodule:: pygsdata

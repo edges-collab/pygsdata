@@ -13,7 +13,6 @@ maxdepth: 2
 
 usage
 reference
-authors
 contributing
 Code of Conduct <codeofconduct>
 License <license>

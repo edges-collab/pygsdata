@@ -9,6 +9,7 @@ key methods for data selection, I/O, and analysis.
 import logging
 import warnings
 from collections.abc import Iterable
+from copy import deepcopy
 from functools import cached_property
 from pathlib import Path
 from typing import Any, Literal, Self
@@ -358,14 +359,23 @@ class GSData:
 
             data = fnc(filename, **kw)
 
-            if "freq_selector" in selectors:
-                data = select_freqs(data, **selectors["freq_selector"])
-            if "time_selector" in selectors:
-                data = select_times(data, **selectors["time_selector"])
-            if "lst_selector" in selectors:
-                data = select_lsts(data, **selectors["lst_selector"])
-            if "load_selector" in selectors:
-                data = select_loads(data, **selectors["load_selector"])
+            selectors_cp = deepcopy(selectors)
+
+            if "freq_selector" in selectors_cp:
+                data = select_freqs(data, **selectors_cp.pop("freq_selector"))
+            if "time_selector" in selectors_cp:
+                data = select_times(data, **selectors_cp.pop("time_selector"))
+            if "lst_selector" in selectors_cp:
+                data = select_lsts(data, **selectors_cp.pop("lst_selector"))
+            if "load_selector" in selectors_cp:
+                data = select_loads(data, **selectors_cp.pop("load_selector"))
+
+            if selectors_cp:
+                raise ValueError(
+                    f"Unrecognized selectors: {selectors_cp.keys()}. Available "
+                    "selectors: freq_selector, time_selector, lst_selector, "
+                    "load_selector"
+                )
 
             return data
 

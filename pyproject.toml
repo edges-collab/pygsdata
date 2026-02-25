@@ -59,6 +59,11 @@ dev = [
     "pygsdata[docs,tests]"
 ]
 
+[dependency-groups]
+dev = [
+    "pre-commit>=4.5.1",
+]
+
 [tool.ruff]
 line-length = 88
 target-version = "py311"

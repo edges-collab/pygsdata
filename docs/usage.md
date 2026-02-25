@@ -28,13 +28,13 @@ can be passed in this way when constructing the object.
 While ACQ is readable, the GSData object supports a native HDF5-based format which is
 both faster to read, and is able to contain more metadata. We can write such a file:
 
-```
+```python
 data.write_gsh5("data.gsh5")
 ```
 
 This file can be read using the same method as above:
 
-```
+```python
 data = GSData.from_file('data.gsh5')
 ```
 
@@ -109,7 +109,7 @@ first argument, and any other parameters as keyword arguments. Since most
 internally-defined functions have already been registered, you can use them out of the
 box. For example:
 
-```
+```python
 from pygsdata.select import select_freqs
 from astropy import units as un
 
@@ -119,13 +119,13 @@ data = select_freqs(data, freq_range=(50*un.MHz, 100*un.MHz))
 The returned `data` object has a different data-shape (it has frewer frequencies), and
 the history contains a new entry. You can print that history:
 
-```
+```python
 print(str(data.history))
 ```
 
 Or just print the most recent addition to the history:
 
-```
+```python
 print(str(data.history[-1]))
 ```
 
