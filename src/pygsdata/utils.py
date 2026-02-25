@@ -7,6 +7,9 @@ from astropy import units as un
 from astropy.coordinates import Angle
 from astropy.time import Time
 
+from edges import modeling as mdl
+from .gsdata import GSData
+
 
 def time_concat(arrays: Sequence[Time], axis: int = 0) -> Time:
     """Concatenate Time objects along axis.
@@ -64,3 +67,25 @@ def angle_centre(a: Angle, b: Angle, p: float = 0.5):
         bhr[bhr < ahr] += 24.0
 
     return kls((ahr * (1 - p) + bhr * p) << un.hourangle)
+
+
+def get_thermal_noise(data: GSData, n_terms=20):
+    thermal_noise = []
+
+    for i in range(len(data.lsts)):
+        model = mdl.LinLog(n_terms=n_terms)
+        model_fit_freqs = data.freqs
+
+        LL = model.at(x=model_fit_freqs)
+        res = LL.fit(ydata=data.data[0, 0, i, :], xdata=model_fit_freqs)
+
+        thermal_noise.append(calculate_rms(res.residual))
+
+    thermal_noise = np.array(thermal_noise)
+
+    return thermal_noise
+
+
+def calculate_rms(array, digits=3):
+    rms = np.sqrt(np.mean(array**2))
+    return round(rms, digits)
