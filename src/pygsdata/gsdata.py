@@ -6,6 +6,7 @@ antenna, adding self-consistent metadata along with the data itself, and providi
 key methods for data selection, I/O, and analysis.
 """
 
+from copy import deepcopy
 import logging
 import warnings
 from collections.abc import Iterable
@@ -358,15 +359,23 @@ class GSData:
 
             data = fnc(filename, **kw)
 
-            if "freq_selector" in selectors:
-                data = select_freqs(data, **selectors["freq_selector"])
-            if "time_selector" in selectors:
-                data = select_times(data, **selectors["time_selector"])
-            if "lst_selector" in selectors:
-                data = select_lsts(data, **selectors["lst_selector"])
-            if "load_selector" in selectors:
-                data = select_loads(data, **selectors["load_selector"])
+            selectors = deepcopy(selectors)
 
+            if "freq_selector" in selectors:
+                data = select_freqs(data, **selectors.pop("freq_selector"))
+            if "time_selector" in selectors:
+                data = select_times(data, **selectors.pop("time_selector"))
+            if "lst_selector" in selectors:
+                data = select_lsts(data, **selectors.pop("lst_selector"))
+            if "load_selector" in selectors:
+                data = select_loads(data, **selectors.pop("load_selector"))
+
+            if selectors:
+                raise ValueError(
+                    f"Unrecognized selectors: {selectors.keys()}. Available selectors: "
+                    "freq_selector, time_selector, lst_selector, load_selector"
+                )
+            
             return data
 
         filename = [filename] if isinstance(filename, str | Path) else filename
