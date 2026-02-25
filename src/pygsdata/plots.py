@@ -207,25 +207,3 @@ def plot_rms_lst(
     plt.tight_layout()
 
     return axs, cbar
-
-
-def get_thermal_noise(gsdata_obj: GSData, n_terms=20):
-    thermal_noise = []
-
-    for i in range(len(gsdata_obj.lsts)):
-        model = mdl.LinLog(n_terms=n_terms)
-        model_fit_freqs = gsdata_obj.freqs
-
-        LL = model.at(x=model_fit_freqs)
-        res = LL.fit(ydata=gsdata_obj.data[0, 0, i, :], xdata=model_fit_freqs)
-
-        thermal_noise.append(calculate_rms(res.residual))
-
-    thermal_noise = np.array(thermal_noise)
-
-    return thermal_noise
-
-
-def calculate_rms(array, digits=3):
-    rms = np.sqrt(np.mean(array**2))
-    return round(rms, digits)
