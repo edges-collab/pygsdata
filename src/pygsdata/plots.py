@@ -3,7 +3,6 @@
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
-from edges import modeling as mdl
 from matplotlib.colors import Normalize, ScalarMappable
 
 from .gsdata import GSData
