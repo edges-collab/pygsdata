@@ -6,10 +6,10 @@ antenna, adding self-consistent metadata along with the data itself, and providi
 key methods for data selection, I/O, and analysis.
 """
 
-from copy import deepcopy
 import logging
 import warnings
 from collections.abc import Iterable
+from copy import deepcopy
 from functools import cached_property
 from pathlib import Path
 from typing import Any, Literal, Self
@@ -372,10 +372,11 @@ class GSData:
 
             if selectors_cp:
                 raise ValueError(
-                    f"Unrecognized selectors: {selectors_cp.keys()}. Available selectors: "
-                    "freq_selector, time_selector, lst_selector, load_selector"
+                    f"Unrecognized selectors: {selectors_cp.keys()}. Available "
+                    "selectors: freq_selector, time_selector, lst_selector, "
+                    "load_selector"
                 )
-            
+
             return data
 
         filename = [filename] if isinstance(filename, str | Path) else filename

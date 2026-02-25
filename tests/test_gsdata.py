@@ -144,6 +144,7 @@ def test_read_bad_filetype():
     with pytest.raises(ValueError, match="Unrecognized file type"):
         GSData.from_file("a_bad_file.txt")
 
+
 def test_read_bad_selector(simple_gsdata, tmp_path):
     pth = tmp_path / "test.pkl"
     with Path(pth).open("wb") as fl:
@@ -155,7 +156,8 @@ def test_read_bad_selector(simple_gsdata, tmp_path):
             reader="gspkl",
             selectors={"bad_selector": {"some_key": 123}},
         )
-        
+
+
 def test_aux_none_is_ok(simple_gsdata):
     new = simple_gsdata.update(auxiliary_measurements=None)
     assert new.auxiliary_measurements is None
