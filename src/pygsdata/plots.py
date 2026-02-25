@@ -121,7 +121,6 @@ def plot_waterfall(
 
 def plot_rms_lst(
     data: GSData,
-    n_terms: int = 5,
     offset: float = 0,
     **imshow_kwargs,
 ):
@@ -134,8 +133,6 @@ def plot_rms_lst(
     ----------
     data
         The data object containing frequency, LST, and residuals.
-    n_terms
-        The number of terms to use in the linlog model.
     offset
         The offset to add to the plot for each LST.
     **imshow_kwargs
@@ -155,33 +152,25 @@ def plot_rms_lst(
     if data.residuals is not None:
         residuals = data.residual
     else:
-        raise Warning(
-            "No residuals found in data object. "
-            f"Fitting {n_terms} term linlog model to data."
+        raise ValueError(
+            "No residuals found in data object. Please fit a model to the data."
         )
 
-        for i in range(len(data.lsts)):
-            model = mdl.LinLog(n_terms=n_terms)
-            linlog_model = model.at(x=model_fit_freqs)
-            residuals[i, :] = linlog_model.fit(
-                ydata=data.data[0, 0, i, :], xdata=model_fit_freqs
-            ).residual
-
-            # Normalize LSTs for color mapping
+    for i in range(len(data.lsts)):
         color = plt.cm.viridis(norm(data.lsts[i]))
         ax1.plot(
             model_fit_freqs,
-            offset + residuals,
+            offset + residuals[i, :],
             color=color,
             label=str(data.lsts[i]),
         )
 
-        # Append RMS
-        rms.append(calculate_rms(residuals))
+    # Append RMS
+    rms.append(calculate_rms(residuals))
 
     ax1.set_xlabel("Frequency (MHz)")
     ax1.set_ylabel("Residuals (K)")
-    ax1.set_title(f"{n_terms} term linlog, Averaged")
+    ax1.set_title(f"REsiduals for all LSTs")
     ax1.grid()
 
     # Add colorbar to the first plot
