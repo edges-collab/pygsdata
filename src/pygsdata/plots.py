@@ -169,7 +169,7 @@ def plot_rms_lst(
 
     ax1.set_xlabel("Frequency (MHz)")
     ax1.set_ylabel("Residuals (K)")
-    ax1.set_title(f"REsiduals for all LSTs")
+    ax1.set_title("REsiduals for all LSTs")
     ax1.grid()
 
     # Add colorbar to the first plot
