@@ -16,6 +16,7 @@ __all__ = [
     "History",
     "Stamp",
     "Telescope",
+    "gsdata_reader",
     "gsregister",
     "select_freqs",
     "select_lsts",
@@ -26,6 +27,7 @@ from .constants import KNOWN_TELESCOPES
 from .gsdata import GSData
 from .gsflag import GSFlag
 from .history import History, Stamp
+from .readers import gsdata_reader
 from .register import GSDATA_PROCESSORS, gsregister
 from .select import select_freqs, select_lsts, select_times
 from .telescope import Telescope
