@@ -20,6 +20,7 @@ def test_plot_waterfall_bad_attribute(simple_gsdata):
     with pytest.raises(ValueError, match="Cannot use attribute"):
         plots.plot_waterfall(simple_gsdata, attribute="flags")
 
+
 def test_plot_rms_lst(simple_gsdata):
     axs, cbar = plots.plot_rms_lst(simple_gsdata)
     assert axs is not None

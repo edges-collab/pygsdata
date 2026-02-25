@@ -6,8 +6,8 @@ import numpy as np
 from astropy import units as un
 from astropy.coordinates import Angle
 from astropy.time import Time
-
 from edges import modeling as mdl
+
 from .gsdata import GSData
 
 
