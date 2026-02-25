@@ -3,7 +3,6 @@
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
-
 from edges import modeling as mdl
 from matplotlib.colors import Normalize, ScalarMappable
 
@@ -120,13 +119,13 @@ def plot_waterfall(
 
 
 def plot_rms_lst(
-    data: GSData, 
-    n_terms: int = 5, 
+    data: GSData,
+    n_terms: int = 5,
     offset: float = 0,
     **imshow_kwargs,
 ):
     """
-    Creates two subplots: 
+    Creates two subplots:
     top: freq (x-axis) vs residuals (y-axis) color-coded by LST (hr)
     bottom: LST (x-axis) vs RMS (y-axis)
 
@@ -155,12 +154,16 @@ def plot_rms_lst(
     if data.residuals is not None:
         residuals = data.residual
     else:
-        raise Warning(f"No residuals found in data object. Fitting {n_terms} term linlog model to data.")
+        raise Warning(
+            f"No residuals found in data object. Fitting {n_terms} term linlog model to data."
+        )
 
         for i in range(len(data.lsts)):
             model = mdl.LinLog(n_terms=n_terms)
             linlog_model = model.at(x=model_fit_freqs)
-            residuals[i, :] = linlog_model.fit(ydata=data.data[0, 0, i, :], xdata=model_fit_freqs).residual
+            residuals[i, :] = linlog_model.fit(
+                ydata=data.data[0, 0, i, :], xdata=model_fit_freqs
+            ).residual
 
         # Normalize LSTs for color mapping
         norm = Normalize(vmin=0, vmax=24)
