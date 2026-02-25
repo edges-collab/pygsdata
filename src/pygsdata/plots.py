@@ -7,6 +7,7 @@ from edges import modeling as mdl
 from matplotlib.colors import Normalize, ScalarMappable
 
 from .gsdata import GSData
+from .utils import calculate_rms, get_thermal_noise
 
 mpl.use("agg")
 
@@ -124,26 +125,26 @@ def plot_rms_lst(
     offset: float = 0,
     **imshow_kwargs,
 ):
-    """
-    Creates two subplots:
-    top: freq (x-axis) vs residuals (y-axis) color-coded by LST (hr)
-    bottom: LST (x-axis) vs RMS (y-axis)
+    """Create two subplots: freq vs residuals (by LST) and LST vs RMS in residuals.
+
+    Top: frequency (x-axis) vs residuals (y-axis) color-coded by LST (hr).
+    Bottom: LST (x-axis) vs RMS (y-axis).
 
     Parameters
     ----------
-        data : GSData
-            The data object containing frequency, LST, and residuals.
-        n_terms : int
-            The number of terms to use in the linlog model.
-        offset : float
-            The offset to add to the plot for each LST.
-        imshow_kwargs : dict
-            Keyword arguments to pass to the imshow function.
-
+    data
+        The data object containing frequency, LST, and residuals.
+    n_terms
+        The number of terms to use in the linlog model.
+    offset
+        The offset to add to the plot for each LST.
+    **imshow_kwargs
+        Keyword arguments to pass to the imshow function.
     """
     rms = []
     model_fit_freqs = data.freqs
     thermal_noise = get_thermal_noise(data)
+    norm = Normalize(vmin=0, vmax=24)
 
     # Create subplots
     fig, axs = plt.subplots(2, 1, figsize=(8, 6), gridspec_kw={"height_ratios": [2, 1]})
@@ -155,7 +156,8 @@ def plot_rms_lst(
         residuals = data.residual
     else:
         raise Warning(
-            f"No residuals found in data object. Fitting {n_terms} term linlog model to data."
+            "No residuals found in data object. "
+            f"Fitting {n_terms} term linlog model to data."
         )
 
         for i in range(len(data.lsts)):
@@ -165,8 +167,7 @@ def plot_rms_lst(
                 ydata=data.data[0, 0, i, :], xdata=model_fit_freqs
             ).residual
 
-        # Normalize LSTs for color mapping
-        norm = Normalize(vmin=0, vmax=24)
+            # Normalize LSTs for color mapping
         color = plt.cm.viridis(norm(data.lsts[i]))
         ax1.plot(
             model_fit_freqs,

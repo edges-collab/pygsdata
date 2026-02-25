@@ -32,9 +32,9 @@ def test_plot_rms_lst(simple_gsdata):
     assert axs[1].get_ylabel() == "RMS (K)"
 
 
-@pytest.mark.parametrize("n_terms,offset", [(3, 0), (5, 0.1)])
+@pytest.mark.parametrize(("n_terms", "offset"), [(3, 0), (5, 0.1)])
 def test_plot_rms_lst_params(simple_gsdata, n_terms, offset):
     """Test plot_rms_lst with different n_terms and offset."""
-    axs, cbar = plots.plot_rms_lst(simple_gsdata, n_terms=n_terms, offset=offset)
+    axs, _ = plots.plot_rms_lst(simple_gsdata, n_terms=n_terms, offset=offset)
     assert len(axs) == 2
     assert axs[0].get_title() == f"{n_terms} term linlog, Averaged"

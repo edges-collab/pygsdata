@@ -70,14 +70,28 @@ def angle_centre(a: Angle, b: Angle, p: float = 0.5):
 
 
 def get_thermal_noise(data: GSData, n_terms=20):
+    """Compute thermal noise (RMS of linlog residuals) per LST.
+
+    Parameters
+    ----------
+    data
+        GSData instance with data, freqs, and lsts.
+    n_terms
+        Number of terms in the LinLog model used to fit each LST spectrum.
+
+    Returns
+    -------
+    np.ndarray
+        One RMS value per LST, same length as data.lsts.
+    """
     thermal_noise = []
 
     for i in range(len(data.lsts)):
         model = mdl.LinLog(n_terms=n_terms)
         model_fit_freqs = data.freqs
 
-        LL = model.at(x=model_fit_freqs)
-        res = LL.fit(ydata=data.data[0, 0, i, :], xdata=model_fit_freqs)
+        linlog = model.at(x=model_fit_freqs)
+        res = linlog.fit(ydata=data.data[0, 0, i, :], xdata=model_fit_freqs)
 
         thermal_noise.append(calculate_rms(res.residual))
 
@@ -87,5 +101,19 @@ def get_thermal_noise(data: GSData, n_terms=20):
 
 
 def calculate_rms(array, digits=3):
+    """Compute RMS of an array and round to the given number of decimal digits.
+
+    Parameters
+    ----------
+    array
+        Input array (array-like).
+    digits
+        Number of decimal places for the result.
+
+    Returns
+    -------
+    float
+        sqrt(mean(array**2)) rounded to `digits` decimals.
+    """
     rms = np.sqrt(np.mean(array**2))
     return round(rms, digits)

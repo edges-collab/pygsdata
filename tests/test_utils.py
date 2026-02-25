@@ -34,8 +34,11 @@ def test_get_thermal_noise_n_terms(simple_gsdata):
     """Test get_thermal_noise with custom n_terms."""
     thermal_5 = utils.get_thermal_noise(simple_gsdata, n_terms=5)
     thermal_20 = utils.get_thermal_noise(simple_gsdata, n_terms=20)
-    assert thermal_5.shape == thermal_20.shape == (len(simple_gsdata.lsts),)
-    assert np.all(np.isfinite(thermal_5)) and np.all(np.isfinite(thermal_20))
+    expected_shape = (len(simple_gsdata.lsts),)
+    assert thermal_5.shape == expected_shape
+    assert thermal_20.shape == expected_shape
+    assert np.all(np.isfinite(thermal_5))
+    assert np.all(np.isfinite(thermal_20))
 
 
 def test_angle_centre():
