@@ -3,9 +3,6 @@
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
-
-from .gsdata import GSData
-from .utils import calculate_rms
 from matplotlib.cm import ScalarMappable
 from matplotlib.colors import Normalize
 
@@ -153,8 +150,7 @@ def plot_model_residuals_vs_lst(
         residuals = data.residuals[0, 0]
     else:
         raise ValueError(
-            "No residuals found in data object."
-            "Please fit a model to the data."
+            "No residuals found in data object.Please fit a model to the data."
         )
 
     for i in range(len(data.lsts)):
