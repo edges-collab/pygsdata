@@ -3,7 +3,9 @@
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
-from edges import modeling as mdl
+
+from .gsdata import GSData
+from .utils import calculate_rms
 from matplotlib.cm import ScalarMappable
 from matplotlib.colors import Normalize
 
@@ -150,14 +152,10 @@ def plot_model_residuals_vs_lst(
     if data.residuals is not None:
         residuals = data.residuals[0, 0]
     else:
-        raise Warning(
-            "No residuals found in data object.Using default 5-term linlog model..."
+        raise ValueError(
+            "No residuals found in data object."
+            "Please fit a model to the data."
         )
-        model = mdl.LinLog(n_terms=5)
-        linlog = model.at(x=model_fit_freqs)
-        residuals = linlog.fit(
-            ydata=data.data[0, 0, i, :], xdata=model_fit_freqs
-        ).residuals[0, 0]
 
     for i in range(len(data.lsts)):
         color = plt.cm.viridis(norm(data.lsts[i]))
