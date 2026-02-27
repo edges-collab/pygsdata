@@ -3,12 +3,12 @@
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
-
-from .gsdata import GSData
-from .utils import calculate_rms
 from edges import modeling as mdl
 from matplotlib.cm import ScalarMappable
 from matplotlib.colors import Normalize
+
+from .gsdata import GSData
+from .utils import calculate_rms
 
 mpl.use("agg")
 
@@ -120,7 +120,6 @@ def plot_waterfall(
     return ax, cb
 
 
-
 def plot_model_residuals_vs_lst(
     data: GSData,
     offset: float = 0,
@@ -149,15 +148,16 @@ def plot_model_residuals_vs_lst(
     ax1 = axs[0]
     residuals = np.zeros((len(data.lsts), len(model_fit_freqs)))
     if data.residuals is not None:
-        residuals = data.residuals[0,0]
+        residuals = data.residuals[0, 0]
     else:
         raise Warning(
-            "No residuals found in data object."
-            "Using default 5-term linlog model..."
+            "No residuals found in data object.Using default 5-term linlog model..."
         )
         model = mdl.LinLog(n_terms=5)
         linlog = model.at(x=model_fit_freqs)
-        residuals = linlog.fit(ydata=data.data[0, 0, i, :], xdata=model_fit_freqs).residuals[0,0]
+        residuals = linlog.fit(
+            ydata=data.data[0, 0, i, :], xdata=model_fit_freqs
+        ).residuals[0, 0]
 
     for i in range(len(data.lsts)):
         color = plt.cm.viridis(norm(data.lsts[i]))
@@ -193,10 +193,8 @@ def plot_model_residuals_vs_lst(
     )
     ax2.set_ylabel("RMS (K)")
     ax2.set_xlabel("LST (hr)")
-    ax2.set_xlim([0,24])
+    ax2.set_xlim([0, 24])
     ax2.grid()
     plt.tight_layout()
 
     return axs, cbar
-
-

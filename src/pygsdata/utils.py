@@ -6,9 +6,6 @@ import numpy as np
 from astropy import units as un
 from astropy.coordinates import Angle
 from astropy.time import Time
-from edges import modeling as mdl
-
-from .gsdata import GSData
 
 
 def time_concat(arrays: Sequence[Time], axis: int = 0) -> Time:
@@ -69,8 +66,7 @@ def angle_centre(a: Angle, b: Angle, p: float = 0.5):
     return kls((ahr * (1 - p) + bhr * p) << un.hourangle)
 
 
-
-def calculate_rms(array : np.ndarray, digits=3, **kwargs):
+def calculate_rms(array: np.ndarray, digits=3, **kwargs):
     """Compute RMS of an array and round to the given number of decimal digits.
 
     Parameters
