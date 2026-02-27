@@ -3,8 +3,11 @@
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.cm import ScalarMappable
+from matplotlib.colors import Normalize
 
 from .gsdata import GSData
+from .utils import calculate_rms
 
 mpl.use("agg")
 
@@ -114,3 +117,79 @@ def plot_waterfall(
     cb = plt.colorbar(img, ax=ax, pad=0.1) if cbar else None
 
     return ax, cb
+
+
+def plot_model_residuals_vs_lst(
+    data: GSData,
+    offset: float = 0,
+    **plot_kwargs,
+):
+    """Create two subplots.
+
+    - Top: frequency (x-axis) vs residuals (y-axis) color-coded by LST (hr).
+    - Bottom: LST (x-axis) vs RMS of residuals (y-axis).
+
+    Parameters
+    ----------
+    data
+        The data object containing frequency, LST, and residuals.
+    offset
+        The offset to add to the plot for each LST.
+    **plot_kwargs
+        Keyword arguments to pass to the plot function.
+    """
+    model_fit_freqs = data.freqs
+    norm = Normalize(vmin=0, vmax=24)
+
+    # Create subplots
+    fig, axs = plt.subplots(2, 1, figsize=(8, 6), gridspec_kw={"height_ratios": [2, 1]})
+
+    # Plot residuals
+    ax1 = axs[0]
+    residuals = np.zeros((len(data.lsts), len(model_fit_freqs)))
+    if data.residuals is not None:
+        residuals = data.residuals[0, 0]
+    else:
+        raise ValueError(
+            "No residuals found in data object.Please fit a model to the data."
+        )
+
+    for i in range(len(data.lsts)):
+        color = plt.cm.viridis(norm(data.lsts[i]))
+        ax1.plot(
+            model_fit_freqs,
+            offset + residuals[i, :],
+            color=color,
+            label=str(data.lsts[i]),
+            **plot_kwargs,
+        )
+
+        # Append RMS
+        rms = calculate_rms(residuals, axis=1)
+
+    ax1.set_xlabel("Frequency (MHz)")
+    ax1.set_ylabel("Residuals (K)")
+    ax1.set_title("Residuals for all LSTs")
+    ax1.grid()
+
+    # Add colorbar to the first plot
+    scalar_map = ScalarMappable(norm=norm, cmap="viridis")
+    scalar_map.set_array([])
+    cbar = fig.colorbar(scalar_map, ax=ax1)
+    cbar.set_label("LST (hr)")
+
+    # Plot RMS vs LST
+    ax2 = axs[1]
+    ax2.scatter(
+        data.lsts,
+        rms,
+        marker="o",
+        color="k",
+    )
+    ax2.set_ylabel("RMS (K)")
+    ax2.set_xlabel("LST (hr)")
+    ax2.set_xlim([0, 24])
+    ax2.grid()
+    plt.tight_layout()
+
+    return axs, cbar

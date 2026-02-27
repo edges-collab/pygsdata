@@ -6,6 +6,32 @@ from astropy.coordinates import Angle, Longitude
 from pygsdata import utils
 
 
+def test_calculate_rms():
+    """Test RMS calculation for known arrays."""
+    assert utils.calculate_rms(np.array([0.0])) == 0.0
+    assert utils.calculate_rms(np.array([1.0, 1.0, 1.0, 1.0])) == 1.0
+    assert utils.calculate_rms(np.array([3.0, 4.0])) == 3.536
+
+
+def test_calculate_rms_digits():
+    """Test that digits parameter controls rounding."""
+    arr = np.array([1.0, 1.0, 1.0])
+    assert utils.calculate_rms(arr, digits=0) == 1.0
+    assert utils.calculate_rms(arr, digits=5) == 1.0
+    assert utils.calculate_rms(np.array([1.0, 1.0, 2.0]), digits=2) == 1.41
+    assert utils.calculate_rms(np.array([1.0, 1.0, 2.0]), digits=4) == 1.4142
+
+
+def test_calculate_rms_axis():
+    """Test RMS calculation with axis parameter for 2D arrays."""
+    arr = np.array([[1.0, 1.0], [1.0, 1.0], [3.0, 4.0]])
+    rms_per_row = utils.calculate_rms(arr, axis=1)
+    assert rms_per_row.shape == (3,)
+    assert rms_per_row[0] == 1.0
+    assert rms_per_row[1] == 1.0
+    assert rms_per_row[2] == 3.536
+
+
 def test_angle_centre():
     zero = Angle(0, unit="hourangle")
     one = Angle(1, unit="hourangle")

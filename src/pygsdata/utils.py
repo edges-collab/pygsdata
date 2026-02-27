@@ -64,3 +64,22 @@ def angle_centre(a: Angle, b: Angle, p: float = 0.5):
         bhr[bhr < ahr] += 24.0
 
     return kls((ahr * (1 - p) + bhr * p) << un.hourangle)
+
+
+def calculate_rms(array: np.ndarray, digits=3, **kwargs):
+    """Compute RMS of an array and round to the given number of decimal digits.
+
+    Parameters
+    ----------
+    array
+        Input array (array-like).
+    digits
+        Number of decimal places for the result.
+
+    Returns
+    -------
+    float
+        sqrt(mean(array**2)) rounded to `digits` decimals.
+    """
+    rms = np.sqrt(np.mean(array**2, **kwargs))
+    return np.round(rms, digits)
