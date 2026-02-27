@@ -124,10 +124,10 @@ def plot_model_residuals_vs_lst(
     offset: float = 0,
     **plot_kwargs,
 ):
-    """Create two subplots:
+    """Create two subplots.
 
-    Top: frequency (x-axis) vs residuals (y-axis) color-coded by LST (hr).
-    Bottom: LST (x-axis) vs RMS of residuals (y-axis).
+    - Top: frequency (x-axis) vs residuals (y-axis) color-coded by LST (hr).
+    - Bottom: LST (x-axis) vs RMS of residuals (y-axis).
 
     Parameters
     ----------
