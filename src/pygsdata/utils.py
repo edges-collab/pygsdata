@@ -69,38 +69,8 @@ def angle_centre(a: Angle, b: Angle, p: float = 0.5):
     return kls((ahr * (1 - p) + bhr * p) << un.hourangle)
 
 
-def get_thermal_noise(data: GSData, n_terms=20):
-    """Compute thermal noise (RMS of linlog residuals) per LST.
 
-    Parameters
-    ----------
-    data
-        GSData instance with data, freqs, and lsts.
-    n_terms
-        Number of terms in the LinLog model used to fit each LST spectrum.
-
-    Returns
-    -------
-    np.ndarray
-        One RMS value per LST, same length as data.lsts.
-    """
-    thermal_noise = []
-
-    for i in range(len(data.lsts)):
-        model = mdl.LinLog(n_terms=n_terms)
-        model_fit_freqs = data.freqs
-
-        linlog = model.at(x=model_fit_freqs)
-        res = linlog.fit(ydata=data.data[0, 0, i, :], xdata=model_fit_freqs)
-
-        thermal_noise.append(calculate_rms(res.residual))
-
-    thermal_noise = np.array(thermal_noise)
-
-    return thermal_noise
-
-
-def calculate_rms(array, digits=3):
+def calculate_rms(array : np.ndarray, digits=3, **kwargs):
     """Compute RMS of an array and round to the given number of decimal digits.
 
     Parameters
@@ -115,5 +85,5 @@ def calculate_rms(array, digits=3):
     float
         sqrt(mean(array**2)) rounded to `digits` decimals.
     """
-    rms = np.sqrt(np.mean(array**2))
-    return round(rms, digits)
+    rms = np.sqrt(np.mean(array**2, **kwargs))
+    return np.round(rms, digits)

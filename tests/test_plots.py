@@ -21,8 +21,9 @@ def test_plot_waterfall_bad_attribute(simple_gsdata):
         plots.plot_waterfall(simple_gsdata, attribute="flags")
 
 
-def test_plot_rms_lst(simple_gsdata):
-    axs, cbar = plots.plot_rms_lst(simple_gsdata)
+def test_plot_model_residuals_vs_lst(modelled_gsdata):
+    """Test that plot_model_residuals_vs_lst produces expected subplots."""
+    axs, cbar = plots.plot_model_residuals_vs_lst(modelled_gsdata)
     assert axs is not None
     assert len(axs) == 2
     assert cbar is not None
@@ -32,9 +33,8 @@ def test_plot_rms_lst(simple_gsdata):
     assert axs[1].get_ylabel() == "RMS (K)"
 
 
-@pytest.mark.parametrize(("n_terms", "offset"), [(3, 0), (5, 0.1)])
-def test_plot_rms_lst_params(simple_gsdata, n_terms, offset):
-    """Test plot_rms_lst with different n_terms and offset."""
-    axs, _ = plots.plot_rms_lst(simple_gsdata, n_terms=n_terms, offset=offset)
+@pytest.mark.parametrize("offset", [0, 0.1])
+def test_plot_model_residuals_vs_lst_params(modelled_gsdata, offset):
+    """Test plot_model_residuals_vs_lst with different offset values."""
+    axs, _ = plots.plot_model_residuals_vs_lst(modelled_gsdata, offset=offset)
     assert len(axs) == 2
-    assert axs[0].get_title() == f"{n_terms} term linlog, Averaged"

@@ -22,23 +22,14 @@ def test_calculate_rms_digits():
     assert utils.calculate_rms(np.array([1.0, 1.0, 2.0]), digits=4) == 1.4142
 
 
-def test_get_thermal_noise(simple_gsdata):
-    """Test get_thermal_noise returns one value per LST."""
-    thermal = utils.get_thermal_noise(simple_gsdata)
-    assert thermal.shape == (len(simple_gsdata.lsts),)
-    assert np.all(np.isfinite(thermal))
-    assert np.all(thermal >= 0)
-
-
-def test_get_thermal_noise_n_terms(simple_gsdata):
-    """Test get_thermal_noise with custom n_terms."""
-    thermal_5 = utils.get_thermal_noise(simple_gsdata, n_terms=5)
-    thermal_20 = utils.get_thermal_noise(simple_gsdata, n_terms=20)
-    expected_shape = (len(simple_gsdata.lsts),)
-    assert thermal_5.shape == expected_shape
-    assert thermal_20.shape == expected_shape
-    assert np.all(np.isfinite(thermal_5))
-    assert np.all(np.isfinite(thermal_20))
+def test_calculate_rms_axis():
+    """Test RMS calculation with axis parameter for 2D arrays."""
+    arr = np.array([[1.0, 1.0], [1.0, 1.0], [3.0, 4.0]])
+    rms_per_row = utils.calculate_rms(arr, axis=1)
+    assert rms_per_row.shape == (3,)
+    assert rms_per_row[0] == 1.0
+    assert rms_per_row[1] == 1.0
+    assert rms_per_row[2] == 3.536
 
 
 def test_angle_centre():

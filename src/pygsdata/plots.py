@@ -3,10 +3,12 @@
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.colors import Normalize, ScalarMappable
 
 from .gsdata import GSData
-from .utils import calculate_rms, get_thermal_noise
+from .utils import calculate_rms
+from edges import modeling as mdl
+from matplotlib.cm import ScalarMappable
+from matplotlib.colors import Normalize
 
 mpl.use("agg")
 
@@ -118,15 +120,15 @@ def plot_waterfall(
     return ax, cb
 
 
-def plot_rms_lst(
+
+def plot_model_residuals_vs_lst(
     data: GSData,
     offset: float = 0,
-    **imshow_kwargs,
+    **plot_kwargs,
 ):
-    """Create two subplots: freq vs residuals (by LST) and LST vs RMS in residuals.
-
+    """Create two subplots:
     Top: frequency (x-axis) vs residuals (y-axis) color-coded by LST (hr).
-    Bottom: LST (x-axis) vs RMS (y-axis).
+    Bottom: LST (x-axis) vs RMS of residuals (y-axis).
 
     Parameters
     ----------
@@ -134,12 +136,10 @@ def plot_rms_lst(
         The data object containing frequency, LST, and residuals.
     offset
         The offset to add to the plot for each LST.
-    **imshow_kwargs
-        Keyword arguments to pass to the imshow function.
+    **plot_kwargs
+        Keyword arguments to pass to the plot function.
     """
-    rms = []
     model_fit_freqs = data.freqs
-    thermal_noise = get_thermal_noise(data)
     norm = Normalize(vmin=0, vmax=24)
 
     # Create subplots
@@ -149,11 +149,15 @@ def plot_rms_lst(
     ax1 = axs[0]
     residuals = np.zeros((len(data.lsts), len(model_fit_freqs)))
     if data.residuals is not None:
-        residuals = data.residual
+        residuals = data.residuals[0,0]
     else:
-        raise ValueError(
-            "No residuals found in data object. Please fit a model to the data."
+        raise Warning(
+            "No residuals found in data object."
+            "Using default 5-term linlog model..."
         )
+        model = mdl.LinLog(n_terms=5)
+        linlog = model.at(x=model_fit_freqs)
+        residuals = linlog.fit(ydata=data.data[0, 0, i, :], xdata=model_fit_freqs).residuals[0,0]
 
     for i in range(len(data.lsts)):
         color = plt.cm.viridis(norm(data.lsts[i]))
@@ -162,14 +166,15 @@ def plot_rms_lst(
             offset + residuals[i, :],
             color=color,
             label=str(data.lsts[i]),
+            **plot_kwargs,
         )
 
-    # Append RMS
-    rms.append(calculate_rms(residuals))
+        # Append RMS
+        rms = calculate_rms(residuals, axis=1)
 
     ax1.set_xlabel("Frequency (MHz)")
     ax1.set_ylabel("Residuals (K)")
-    ax1.set_title("REsiduals for all LSTs")
+    ax1.set_title("Residuals for all LSTs")
     ax1.grid()
 
     # Add colorbar to the first plot
@@ -180,19 +185,18 @@ def plot_rms_lst(
 
     # Plot RMS vs LST
     ax2 = axs[1]
-    rms = np.array(rms)
-    ax2.errorbar(
+    ax2.scatter(
         data.lsts,
         rms,
-        yerr=thermal_noise,
         marker="o",
-        mfc="red",
-        c="k",
-        alpha=0.8,
+        color="k",
     )
     ax2.set_ylabel("RMS (K)")
     ax2.set_xlabel("LST (hr)")
+    ax2.set_xlim([0,24])
     ax2.grid()
     plt.tight_layout()
 
     return axs, cbar
+
+
