@@ -81,5 +81,5 @@ def calculate_rms(array: np.ndarray, digits=3, **kwargs):
     float
         sqrt(mean(array**2)) rounded to `digits` decimals.
     """
-    rms = np.sqrt(np.mean(array**2, **kwargs))
+    rms = np.sqrt(np.nanmean(array**2, **kwargs))
     return np.round(rms, digits)

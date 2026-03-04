@@ -172,18 +172,22 @@ def plot_model_residuals_vs_lst(
     # Plot residuals
     ax1 = axs[0]
 
-    for i in range(len(data.lsts)):
-        color = plt.cm.viridis(norm(data.lsts[i]))
+    j = 0
+    for lst, qq in zip(data.lsts, q, strict=True):
+        color = plt.cm.viridis(norm(lst))
         ax1.plot(
             data.freqs,
-            offset * i + q[i, :],
+            offset * j + qq,
             color=color,
-            label=str(data.lsts[i]),
+            label=str(lst),
             **plot_kwargs,
         )
 
+        if np.any(~np.isnan(qq)):
+            j += 1
+
         # Append RMS
-        rms = calculate_rms(q, axis=1)
+        rms = calculate_rms(qq, axis=1)
 
     ax1.set_xlabel("Frequency (MHz)")
     ax1.set_ylabel("Residuals (K)")
