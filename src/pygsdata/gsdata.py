@@ -583,7 +583,9 @@ class GSData:
         return self.get_cumulative_flags()
 
     def get_flagged_nsamples(
-        self, which_flags: tuple[str] | None = None, ignore_flags: tuple[str] = ()
+        self,
+        which_flags: tuple[str, ...] | None = None,
+        ignore_flags: tuple[str, ...] = (),
     ) -> np.ndarray:
         """Get the nsamples of the data after accounting for flags."""
         cumflags = self.get_cumulative_flags(which_flags, ignore_flags)

@@ -122,6 +122,10 @@ def plot_waterfall(
 def plot_model_residuals_vs_lst(
     data: GSData,
     offset: float = 0,
+    load: int = 0,
+    pol: int = 0,
+    which_flags: tuple[str, ...] | None = None,
+    ignore_flags: tuple[str, ...] = (),
     **plot_kwargs,
 ):
     """Create two subplots.
@@ -135,37 +139,55 @@ def plot_model_residuals_vs_lst(
         The data object containing frequency, LST, and residuals.
     offset
         The offset to add to the plot for each LST.
+    load
+        The index of the load to plot (only one load is plotted).
+    pol
+        The polarization to plot (only one polarization is plotted).
+    which_flags
+        A tuple of flag names to use in order to mask the data. If None, all flags are
+        used. Send an empty tuple to ignore all flags.
+    ignore_flags
+        A tuple of flag names to ignore.
+
     **plot_kwargs
         Keyword arguments to pass to the plot function.
     """
-    model_fit_freqs = data.freqs
+    if data.residuals is None:
+        raise ValueError(
+            "No residuals found in data object. Please fit a model to the data first."
+        )
+
     norm = Normalize(vmin=0, vmax=24)
+
+    q = np.where(
+        data.get_flagged_nsamples(which_flags, ignore_flags) == 0,
+        np.nan,
+        data.residuals,
+    )
+    q = q[load, pol, :, :]
 
     # Create subplots
     fig, axs = plt.subplots(2, 1, figsize=(8, 6), gridspec_kw={"height_ratios": [2, 1]})
 
     # Plot residuals
     ax1 = axs[0]
-    residuals = np.zeros((len(data.lsts), len(model_fit_freqs)))
-    if data.residuals is not None:
-        residuals = data.residuals[0, 0]
-    else:
-        raise ValueError(
-            "No residuals found in data object.Please fit a model to the data."
-        )
 
-    for i in range(len(data.lsts)):
-        color = plt.cm.viridis(norm(data.lsts[i]))
+    j = 0
+    for lst, qq in zip(data.lsts, q, strict=True):
+        color = plt.cm.viridis(norm(lst))
         ax1.plot(
-            model_fit_freqs,
-            offset + residuals[i, :],
+            data.freqs,
+            offset * j + qq,
             color=color,
-            label=str(data.lsts[i]),
+            label=str(lst),
             **plot_kwargs,
         )
 
-        # Append RMS
-        rms = calculate_rms(residuals, axis=1)
+        if np.any(~np.isnan(qq)):
+            j += 1
+
+    # Append RMS
+    rms = calculate_rms(q, axis=1)
 
     ax1.set_xlabel("Frequency (MHz)")
     ax1.set_ylabel("Residuals (K)")
