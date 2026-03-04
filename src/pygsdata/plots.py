@@ -187,7 +187,7 @@ def plot_model_residuals_vs_lst(
             j += 1
 
     # Append RMS
-    rms = calculate_rms(qq, axis=1)
+    rms = calculate_rms(q, axis=1)
 
     ax1.set_xlabel("Frequency (MHz)")
     ax1.set_ylabel("Residuals (K)")
