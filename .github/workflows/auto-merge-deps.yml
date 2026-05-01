@@ -1,4 +1,4 @@
-name: auto-merge dependencies and pre-commit updates
+name: auto-merge dependabot and pre-commit updates
 on: pull_request_target
 
 permissions:
