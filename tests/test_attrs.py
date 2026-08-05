@@ -233,7 +233,7 @@ class TestNpField:
             Test()
 
         z = Test(x=np.zeros((3, 3)), z=None)
-        assert z == z
+        assert z == z  # noqa: PLR0124  # reflexivity of the array-aware __eq__
 
 
 class TestTimeField:
@@ -247,7 +247,7 @@ class TestTimeField:
             time = pga.timefield()
 
         x = Test(time=Time("2020-01-01T00:00:00"))
-        assert x == x
+        assert x == x  # noqa: PLR0124  # reflexivity of the time-aware __eq__
 
         y = Test(time=Time("2020-01-01T00:00:10"))
         assert x != y

@@ -150,7 +150,10 @@ class GSData:
             flag._check_compat(self)
 
             if not isinstance(key, str):
-                raise ValueError("flags keys must be strings")
+                # Kept as ValueError (not TypeError): part of the public API
+                # contract, asserted verbatim by
+                # tests/test_gsdata.py::test_bad_gsdata_init.
+                raise ValueError("flags keys must be strings")  # noqa: TRY004
 
     @residuals.validator
     def _residuals_validator(self, attribute, value):

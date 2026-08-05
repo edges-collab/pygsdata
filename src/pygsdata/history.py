@@ -89,7 +89,11 @@ class Stamp:
         for k, v in dct["parameters"].items():
             try:
                 yaml.load(yaml.dump(v), Loader=yaml.FullLoader)
-            except Exception:
+            except Exception:  # noqa: BLE001
+                # `v` can be an arbitrary user-supplied object, and yaml can raise
+                # all sorts of errors (not just YAMLError) depending on its
+                # __repr__/__reduce__ etc. Any failure here just means we can't
+                # round-trip it through YAML, so fall back to a string repr.
                 dct["parameters"][k] = str(v)
 
         return dct
