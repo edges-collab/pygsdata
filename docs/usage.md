@@ -19,7 +19,8 @@ To read in data as a GSData object, simply use the `from_file` method:
 
 ```python
 from pygsdata import GSData
-data = GSData.from_file('data.acq', telescope_name="EDGES-low")
+
+data = GSData.from_file("data.acq", telescope_name="EDGES-low")
 ```
 
 Notice that we passed the telescope name, which is a piece of (optional) metadata that
@@ -35,7 +36,7 @@ data.write_gsh5("data.gsh5")
 This file can be read using the same method as above:
 
 ```python
-data = GSData.from_file('data.gsh5')
+data = GSData.from_file("data.gsh5")
 ```
 
 Notice that here we didn't have to specify the `telescope_name` parameter, because
@@ -61,9 +62,7 @@ The history can be updated by supplying a dictionary with at least a message:
 
 ```python
 data = data.update(
-    data=data.data * 3,
-    data_unit="uncalibrated",
-    history={"message": "Multiplied by 3"}
+    data=data.data * 3, data_unit="uncalibrated", history={"message": "Multiplied by 3"}
 )
 ```
 
@@ -74,10 +73,11 @@ directly if you wish:
 
 ```python
 from pygsdata import Stamp
+
 data = data.update(
     data=data.data * 3,
     data_unit="uncalibrated",
-    history=Stamp(message="Multiplied by 3", timestamp=datetime.now())
+    history=Stamp(message="Multiplied by 3", timestamp=datetime.now()),
 )
 ```
 
@@ -89,8 +89,9 @@ def multiply_by_3(data, data_unit):
     return data.update(
         data=data.data * 3,
         data_unit=data_unit,
-        history={"function": "multiply_by_3", "parameters": {"data_unit": data_unit}}
+        history={"function": "multiply_by_3", "parameters": {"data_unit": data_unit}},
     )
+
 
 data = multiply_by_3(data, "uncalibrated")
 ```
@@ -113,7 +114,7 @@ box. For example:
 from pygsdata.select import select_freqs
 from astropy import units as un
 
-data = select_freqs(data, freq_range=(50*un.MHz, 100*un.MHz))
+data = select_freqs(data, freq_range=(50 * un.MHz, 100 * un.MHz))
 ```
 
 The returned `data` object has a different data-shape (it has frewer frequencies), and
@@ -144,8 +145,9 @@ with the correct signature:
 ```python
 from pygsdata import gsregister, GSData
 
+
 @gsregister("calibrate")
-def pow_data(data: GSData, *, n: int=2) -> GSData:
+def pow_data(data: GSData, *, n: int = 2) -> GSData:
     return data.update(data=data.data**n)
 ```
 
@@ -167,14 +169,15 @@ from a GSData object. For example, let's say we have a GSData file:
 
 ```python
 from pygsdata import GSData, plots
-data = GSData.from_file('2015_202_00.gsh5')
+
+data = GSData.from_file("2015_202_00.gsh5")
 
 # Plot a flagged waterfall of the data (whether it's residuals or spectra)
 plots.plot_waterfall(data)
 
 # Plot the same but show the nsamples intsead of data
-plots.plot_waterfall(data, attribute='nsamples')
+plots.plot_waterfall(data, attribute="nsamples")
 
 # Plot the data residuals (if they exist) and don't apply any flags.
-plots.plot_waterfall(data, attribute='resids', which_flags=())
+plots.plot_waterfall(data, attribute="resids", which_flags=())
 ```
