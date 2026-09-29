@@ -2,11 +2,15 @@
 
 import contextlib
 import datetime
+import functools
+import importlib
+import inspect
 import warnings
-from importlib.metadata import PackageNotFoundError, version
+from collections.abc import Callable
+from importlib.metadata import PackageNotFoundError, packages_distributions, version
 
 import yaml
-from attrs import asdict, define, evolve, field
+from attrs import asdict, define, evolve, field, fields
 from attrs import validators as vld
 from hickleable import hickleable
 
@@ -21,6 +25,35 @@ def _default_constructor(loader, tag_suffix, node):
 
 
 yaml.add_multi_constructor("", _default_constructor, yaml.FullLoader)
+
+
+@functools.cache
+def _distribution_version(module: str) -> tuple[str, str] | None:
+    """Return (distribution name, version) of the package that provides a module."""
+    top = module.partition(".")[0]
+    for dist in (*packages_distributions().get(top, ()), top):
+        with contextlib.suppress(PackageNotFoundError):
+            return dist, version(dist)
+    return None
+
+
+def _escape(text: str) -> str:
+    """Escape square brackets so rich does not interpret them as markup."""
+    return text.replace("[", r"\[")
+
+
+def _resolve_qualname(qualname: str) -> object:
+    """Import the object named by a fully-qualified ``module.qualname`` string."""
+    parts = qualname.split(".")
+    for i in range(len(parts) - 1, 0, -1):
+        try:
+            obj = importlib.import_module(".".join(parts[:i]))
+        except ImportError:
+            continue
+        for attr in parts[i:]:
+            obj = getattr(obj, attr)
+        return obj
+    raise ImportError(f"could not import any module from '{qualname}'")
 
 
 @hickleable()
@@ -45,6 +78,11 @@ class Stamp:
     timestamp
         A datetime object corresponding to the time the process was performed.
         By default, this is set to the time that the Stamp object is created.
+    qualname
+        The fully-qualified name (``module.qualname``) of the function that was
+        applied. Together with ``versions``, this identifies the exact code that ran.
+    description
+        The summary line of the function's docstring at the time it was applied.
     """
 
     message: str = field(default="")
@@ -52,6 +90,8 @@ class Stamp:
     parameters: dict = field(factory=dict)
     versions: dict = field()
     timestamp: datetime.datetime = field(factory=datetime.datetime.now)
+    qualname: str = field(default="")
+    description: str = field(default="")
 
     @function.validator
     def _function_vld(self, _, value):
@@ -70,14 +110,91 @@ class Stamp:
                 out[pkg] = version(pkg)
         return out
 
+    @classmethod
+    def from_function(
+        cls, func: Callable, parameters: dict | None = None, message: str = ""
+    ) -> Self:
+        """Create a Stamp recording the application of a function.
+
+        Records the function's name, fully-qualified name, docstring summary line,
+        and the version of the package that provides it.
+        """
+        doc = inspect.getdoc(func) or ""
+        stamp = cls(
+            message=message,
+            function=func.__name__,
+            parameters=parameters or {},
+            qualname=f"{func.__module__}.{func.__qualname__}",
+            description=" ".join(doc.partition("\n\n")[0].split()),
+        )
+        if dist := _distribution_version(func.__module__):
+            stamp = evolve(stamp, versions={**stamp.versions, dist[0]: dist[1]})
+        return stamp
+
+    def parameter_descriptions(self) -> dict[str, str]:
+        """Return docstring descriptions of the recorded parameters.
+
+        The descriptions are not stored in the history. They are read from the
+        docstring of the function named by ``qualname``, which must be importable.
+        If that function belongs to an installed package, the installed version must
+        match the one recorded in ``versions``, so that the descriptions match the
+        code that actually ran.
+
+        Requires the optional ``docstring_parser`` package.
+
+        Raises
+        ------
+        LookupError
+            If the descriptions cannot be obtained. The message says why.
+        """
+        try:
+            import docstring_parser
+        except ImportError as e:
+            raise LookupError("docstring_parser is not installed") from e
+
+        if not self.qualname:
+            raise LookupError("no qualname recorded")
+
+        module = self.qualname.partition(".")[0]
+        if module == "__main__":
+            # The script that ran is not the one running now.
+            raise LookupError(f"{self.qualname} was defined in a script")
+
+        try:
+            func = _resolve_qualname(self.qualname)
+        except (ImportError, AttributeError) as e:
+            raise LookupError(f"cannot import {self.qualname}") from e
+
+        if dist := _distribution_version(module):
+            name, installed = dist
+            if (recorded := self.versions.get(name)) != installed:
+                raise LookupError(
+                    f"{name} version recorded as {recorded}, but {installed} is "
+                    "installed"
+                )
+
+        try:
+            doc = docstring_parser.parse(inspect.getdoc(func) or "")
+        except docstring_parser.ParseError as e:
+            raise LookupError(f"cannot parse docstring of {self.qualname}") from e
+
+        return {
+            p.arg_name: " ".join(p.description.split())
+            for p in doc.params
+            if p.arg_name in self.parameters and p.description
+        }
+
     def __getstate__(self) -> dict:
         """Get the state for serialization."""
         return self._to_yaml_dict()
 
     def __setstate__(self, state: dict):
         """Set the state for deserialization."""
-        state["timestamp"] = datetime.datetime.fromisoformat(state["timestamp"])
-        self.__dict__.update(state)
+        # Go through from_yaml_dict so that fields missing from older files get
+        # their defaults and unknown fields from newer files are dropped. hickle
+        # adds 'item_index' when the stamp is an element of a container.
+        state = {k: v for k, v in state.items() if k != "item_index"}
+        self.__dict__.update(type(self).from_yaml_dict(state).__dict__)
 
     def _to_yaml_dict(self):
         dct = asdict(self)
@@ -104,30 +221,52 @@ class Stamp:
 
     def __str__(self):
         """Human-readable representation of the history record."""
-        pstring = "        ".join(f"{k}: {v}" for k, v in self.parameters.items())
+        pstring = "\n        ".join(f"{k}: {v}" for k, v in self.parameters.items())
         vstring = " | ".join(f"{k} ({v})" for k, v in self.versions.items())
 
         return f"""{self.timestamp.isoformat()}
-    function: {self.function}
+    function: {self.qualname or self.function}
+    description: {self.description}
     message : {self.message}
     parameters:
         {pstring}
     versions: {vstring}
         """
 
-    def pretty(self):
-        """Return a rich-compatible string representation of the history record."""
-        pstring = "        ".join(
-            f"[green]{k}[/]: [dim]{v}[/]" for k, v in self.parameters.items()
-        )
+    def pretty(self, annotate: bool = False):
+        """Return a rich-compatible string representation of the history record.
+
+        Parameters
+        ----------
+        annotate
+            Whether to show the docstring description of each parameter next to its
+            value. See :meth:`parameter_descriptions` for when these are available.
+            Note that this imports the module named in ``qualname``.
+        """
+        descriptions = {}
+        note = ""
+        if annotate and self.parameters:
+            try:
+                descriptions = self.parameter_descriptions()
+            except LookupError as e:
+                note = f"\n        [dim italic](no descriptions: {_escape(str(e))})[/]"
+
+        plines = []
+        for k, v in self.parameters.items():
+            line = f"[green]{k}[/]: [dim]{v}[/]"
+            if k in descriptions:
+                line += f"  [italic]# {_escape(descriptions[k])}[/]"
+            plines.append(line)
+        pstring = "\n        ".join(plines)
         vstring = " | ".join(f"{k} ([blue]{v}[/])" for k, v in self.versions.items())
 
         return f"""[bold underline blue]{self.timestamp.isoformat()}[/]
-    [bold green]function[/]  : {self.function}
-    [bold green]message [/]  : {self.message}
-    [bold green]parameters[/]:
+    [bold green]function[/]   : {self.qualname or self.function}
+    [bold green]description[/]: {_escape(self.description)}
+    [bold green]message [/]   : {self.message}
+    [bold green]parameters[/] :{note}
         {pstring}
-    [bold green]versions[/]  : {vstring}
+    [bold green]versions[/]   : {vstring}
         """
 
     @classmethod
@@ -139,8 +278,21 @@ class Stamp:
 
     @classmethod
     def from_yaml_dict(cls, d: dict) -> Self:
-        """Create a Stamp object from a dictionary representing a history record."""
-        d["timestamp"] = datetime.datetime.fromisoformat(d["timestamp"])
+        """Create a Stamp object from a dictionary representing a history record.
+
+        Keys that are not fields of Stamp (e.g. written by a newer version of
+        pygsdata) are dropped with a warning.
+        """
+        known = {f.name for f in fields(cls)}
+        if unknown := sorted(set(d) - known):
+            warnings.warn(
+                f"Ignoring unknown history fields {unknown}. They may have been "
+                "written by a newer version of pygsdata.",
+                stacklevel=2,
+            )
+        d = {k: v for k, v in d.items() if k in known}
+        if isinstance(d.get("timestamp"), str):
+            d["timestamp"] = datetime.datetime.fromisoformat(d["timestamp"])
         return cls(**d)
 
 
@@ -168,9 +320,16 @@ class History:
         """Human-readable representation of the history."""
         return "\n\n".join(str(s) for s in self.stamps)
 
-    def pretty(self):
-        """Return a rich-compatible string representation of the history."""
-        return "\n\n".join(s.pretty() for s in self.stamps)
+    def pretty(self, annotate: bool = False):
+        """Return a rich-compatible string representation of the history.
+
+        Parameters
+        ----------
+        annotate
+            Whether to show docstring descriptions of each stamp's parameters. See
+            :meth:`Stamp.pretty`.
+        """
+        return "\n\n".join(s.pretty(annotate=annotate) for s in self.stamps)
 
     def __getitem__(self, key):
         """Return the Stamp object corresponding to the given key."""

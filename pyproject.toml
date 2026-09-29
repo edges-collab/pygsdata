@@ -48,7 +48,11 @@ docs = [
     "ipython",
     "sphinx-click",
 ]
+docstrings = [
+    "docstring_parser",
+]
 tests = [
+    "docstring_parser",
     "pytest",
     "pytest-cov",
     "pytest-xdist",

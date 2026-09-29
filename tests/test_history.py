@@ -1,7 +1,10 @@
 """Test the history module."""
 
+import warnings
 from datetime import UTC, datetime, timedelta
+from importlib.metadata import version
 
+import hickle
 import pytest
 import yaml
 
@@ -98,3 +101,104 @@ def test_non_yamlable_parameter():
 
     assert h2.stamps[0].parameters["a"] == 1
     assert isinstance(h2.stamps[0].parameters["b"], str)
+
+
+def _old_style_dict():
+    """Return a stamp dict as written before qualname/description were added."""
+    return {
+        "message": "",
+        "function": "a_function",
+        "parameters": {"a": 1},
+        "versions": {"numpy": "1.0"},
+        "timestamp": datetime.now().isoformat(),
+    }
+
+
+def test_old_style_stamp_loads_with_defaults():
+    s = Stamp.from_yaml_dict(_old_style_dict())
+    assert s.qualname == ""
+    assert s.description == ""
+
+
+def test_old_style_stamp_setstate():
+    """Unpickling (e.g. via hickle) an old stamp fills in the new fields."""
+    s = Stamp.__new__(Stamp)
+    s.__setstate__(_old_style_dict())
+    assert s.function == "a_function"
+    assert s.description == ""
+    assert isinstance(s.timestamp, datetime)
+
+
+def test_hickle_roundtrip_no_warning(tmp_path):
+    h = History((Stamp(message="a", qualname="mod.f", description="Do it."),))
+    hickle.dump(h, tmp_path / "h.h5", mode="w")
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        h2 = hickle.load(tmp_path / "h.h5")
+    assert h2[0].description == "Do it."
+    assert not hasattr(h2[0], "item_index")
+
+
+def test_unknown_stamp_fields_are_dropped():
+    d = {**_old_style_dict(), "from_the_future": 3}
+    with pytest.warns(UserWarning, match="unknown history fields"):
+        s = Stamp.from_yaml_dict(d)
+    assert not hasattr(s, "from_the_future")
+
+    with pytest.warns(UserWarning, match="unknown history fields"):
+        h = History.from_repr(yaml.dump([d]))
+    assert len(h) == 1
+
+
+def test_str_and_pretty_show_description():
+    s = Stamp(function="f", qualname="mod.f", description="Do [a] thing.")
+    assert "mod.f" in str(s)
+    assert "Do [a] thing." in str(s)
+    assert r"Do \[a] thing." in s.pretty()
+
+
+@pytest.mark.parametrize(
+    ("kwargs", "reason"),
+    [
+        ({}, "no qualname recorded"),
+        ({"qualname": "__main__.f"}, "defined in a script"),
+        ({"qualname": "not_a_module.f"}, "cannot import not_a_module.f"),
+        ({"qualname": "pygsdata.register.nope"}, "cannot import"),
+        (
+            {"qualname": "pygsdata.register.add_flags", "versions": {}},
+            "pygsdata version recorded as None",
+        ),
+        (
+            {
+                "qualname": "pygsdata.register.add_flags",
+                "versions": {"pygsdata": "0.0.1"},
+            },
+            "pygsdata version recorded as 0.0.1",
+        ),
+    ],
+)
+def test_parameter_descriptions_unavailable(kwargs, reason):
+    pytest.importorskip("docstring_parser")
+    s = Stamp(function="f", parameters={"filt": "x"}, **kwargs)
+    with pytest.raises(LookupError, match=reason):
+        s.parameter_descriptions()
+
+    # pretty() never fails, it just says why there are no descriptions.
+    pretty = s.pretty(annotate=True)
+    assert "no descriptions:" in pretty
+    assert reason in pretty
+
+
+def test_parameter_descriptions_matching_version():
+    pytest.importorskip("docstring_parser")
+    s = Stamp(
+        function="add_flags",
+        qualname="pygsdata.register.add_flags",
+        parameters={"filt": "x"},
+        versions={"pygsdata": version("pygsdata")},
+    )
+    # Only parameters that were recorded are described.
+    assert s.parameter_descriptions() == {
+        "filt": "The name under which to store the flags."
+    }
+    assert "no descriptions" not in History([s]).pretty(annotate=True)
