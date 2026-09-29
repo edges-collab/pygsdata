@@ -2,10 +2,15 @@
 
 from collections.abc import Sequence
 
+import h5py
 import numpy as np
 from astropy import units as un
 from astropy.coordinates import Angle
 from astropy.time import Time
+
+# Target chunk size for checksummed HDF5 datasets. Kept at the size of HDF5's default
+# chunk cache (1 MiB) so that partial reads of a chunk can be served from the cache.
+_CHUNK_TARGET_BYTES = 1024**2
 
 
 def time_concat(arrays: Sequence[Time], axis: int = 0) -> Time:
@@ -83,3 +88,65 @@ def calculate_rms(array: np.ndarray, digits=3, **kwargs):
     """
     rms = np.sqrt(np.nanmean(array**2, **kwargs))
     return np.round(rms, digits)
+
+
+def chunk_shape(
+    shape: tuple[int, ...], itemsize: int, target: int = _CHUNK_TARGET_BYTES
+) -> tuple[int, ...]:
+    """Compute an HDF5 chunk shape of roughly ``target`` bytes.
+
+    Trailing axes are kept whole for as long as they fit, so that a chunk of a
+    (load, pol, time, freq) array spans full spectra. The first axis that does not
+    fit is split, and all axes before it get a chunk size of one.
+    """
+    chunks = [1] * len(shape)
+    nbytes = itemsize
+    for i in range(len(shape) - 1, -1, -1):
+        if nbytes * shape[i] <= target:
+            chunks[i] = shape[i]
+            nbytes *= shape[i]
+        else:
+            chunks[i] = max(1, target // nbytes)
+            break
+    return tuple(chunks)
+
+
+def write_h5_dataset(
+    grp: h5py.Group, name: str, value, checksum: bool = True
+) -> h5py.Dataset:
+    """Write a dataset to an HDF5 group, with a Fletcher32 checksum if possible.
+
+    Checksums require chunked storage, so they are only applied to numeric arrays
+    with at least one dimension and non-zero size. Everything else is written as a
+    plain dataset.
+    """
+    arr = np.asarray(value)
+    if checksum and arr.ndim > 0 and arr.size > 0 and arr.dtype.kind in "biufc":
+        return grp.create_dataset(
+            name,
+            data=arr,
+            chunks=chunk_shape(arr.shape, arr.dtype.itemsize),
+            fletcher32=True,
+        )
+
+    grp[name] = value
+    return grp[name]
+
+
+def find_unreadable_datasets(grp: h5py.Group) -> list[str]:
+    """Return the names of all datasets in ``grp`` that fail to read.
+
+    For datasets written with a Fletcher32 checksum, a read failure means that the
+    checksum did not match the stored data, i.e. the data is corrupted.
+    """
+    bad = []
+
+    def _check(name, obj):
+        if isinstance(obj, h5py.Dataset):
+            try:
+                obj[()]
+            except OSError:
+                bad.append(obj.name)
+
+    grp.visititems(_check)
+    return bad

@@ -21,8 +21,13 @@ from .select import (
     time_selector,
 )
 from .telescope import Telescope
+from .utils import find_unreadable_datasets
 
 GSDATA_READERS = {}
+
+
+class GSH5ChecksumError(OSError):
+    """Raised when a GSH5 file contains datasets that fail their checksum."""
 
 
 def gsdata_reader(
@@ -56,7 +61,30 @@ def read_gsh5(
     if reader is None:
         raise ValueError(f"Unsupported file format version: {version}")
 
-    return reader(filename, selectors)
+    try:
+        return reader(filename, selectors)
+    except (OSError, ValueError) as e:
+        # A failed Fletcher32 check surfaces from h5py as a generic OSError that
+        # doesn't say which dataset failed (and hickle wraps it in a ValueError).
+        # Find the culprits so the error is useful. Only do this when the error was
+        # caused by an OSError, since scanning reads the whole file. If every dataset
+        # reads fine, the error was something else: re-raise it.
+        if not _caused_by_oserror(e) or not (bad := find_unreadable_datasets(filename)):
+            raise
+        raise GSH5ChecksumError(
+            f"The GSH5 file {filename.file.filename} is corrupted: the following "
+            "datasets failed to read (checksum mismatch or other damage): "
+            f"{', '.join(bad)}"
+        ) from e
+
+
+def _caused_by_oserror(exc: BaseException | None) -> bool:
+    """Whether an exception is, or was raised from, an OSError."""
+    while exc is not None:
+        if isinstance(exc, OSError):
+            return True
+        exc = exc.__cause__ or exc.__context__
+    return False
 
 
 @gsdata_reader(select_on_read=False, formats=["gspkl"])
