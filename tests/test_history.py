@@ -1,5 +1,6 @@
 """Test the history module."""
 
+import sys
 import warnings
 from datetime import UTC, datetime, timedelta
 from importlib.metadata import version
@@ -120,6 +121,13 @@ def test_old_style_stamp_loads_with_defaults():
     assert s.description == ""
 
 
+def test_from_yaml_dict_non_string_timestamp():
+    """A datetime timestamp is kept as is, and a missing one gets the default."""
+    now = datetime.now()
+    assert Stamp.from_yaml_dict({"message": "a", "timestamp": now}).timestamp == now
+    assert isinstance(Stamp.from_yaml_dict({"message": "a"}).timestamp, datetime)
+
+
 def test_old_style_stamp_setstate():
     """Unpickling (e.g. via hickle) an old stamp fills in the new fields."""
     s = Stamp.__new__(Stamp)
@@ -189,14 +197,38 @@ def test_parameter_descriptions_unavailable(kwargs, reason):
     assert reason in pretty
 
 
-def test_parameter_descriptions_matching_version():
-    pytest.importorskip("docstring_parser")
-    s = Stamp(
+def _add_flags_stamp():
+    return Stamp(
         function="add_flags",
         qualname="pygsdata.register.add_flags",
         parameters={"filt": "x"},
         versions={"pygsdata": version("pygsdata")},
     )
+
+
+def test_parameter_descriptions_without_docstring_parser(monkeypatch):
+    # A None entry in sys.modules makes the import raise ImportError.
+    monkeypatch.setitem(sys.modules, "docstring_parser", None)
+    s = _add_flags_stamp()
+    with pytest.raises(LookupError, match="docstring_parser is not installed"):
+        s.parameter_descriptions()
+    assert "docstring_parser is not installed" in s.pretty(annotate=True)
+
+
+def test_parameter_descriptions_unparseable_docstring(monkeypatch):
+    docstring_parser = pytest.importorskip("docstring_parser")
+
+    def bad_parse(text):
+        raise docstring_parser.ParseError("malformed")
+
+    monkeypatch.setattr(docstring_parser, "parse", bad_parse)
+    with pytest.raises(LookupError, match="cannot parse docstring"):
+        _add_flags_stamp().parameter_descriptions()
+
+
+def test_parameter_descriptions_matching_version():
+    pytest.importorskip("docstring_parser")
+    s = _add_flags_stamp()
     # Only parameters that were recorded are described.
     assert s.parameter_descriptions() == {
         "filt": "The name under which to store the flags."
