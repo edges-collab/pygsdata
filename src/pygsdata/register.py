@@ -43,11 +43,23 @@ def _register(func: callable, kind: RegKind) -> callable:
     def wrapper(data: GSData, *args, message: str = "", **kw) -> GSData | list[GSData]:
         newdata = func(data, *args, **kw)
 
-        history = Stamp(
-            message=message,
-            function=func.__name__,
-            parameters=kw,
-        )
+        # Record every parameter the function actually used, including positional
+        # arguments and defaults, so the history is reproducible even if defaults
+        # change in the future.
+        bound = sig.bind(data, *args, **kw)
+        bound.apply_defaults()
+        parameters = {}
+        for name, value in list(bound.arguments.items())[1:]:
+            param_kind = sig.parameters[name].kind
+            if param_kind is inspect.Parameter.VAR_KEYWORD:
+                parameters.update(value)
+            elif param_kind is inspect.Parameter.VAR_POSITIONAL:
+                if value:
+                    parameters[name] = list(value)
+            else:
+                parameters[name] = value
+
+        history = Stamp.from_function(func, parameters=parameters, message=message)
 
         kw = {"history": history}
 
@@ -89,5 +101,15 @@ class gsregister:  # noqa: N801
 # Some simple registered functions
 @gsregister("supplement")
 def add_flags(data: GSData, filt: str, flags: GSFlag) -> GSData:
-    """Add flags to a GSData object."""
+    """Add flags to a GSData object.
+
+    Parameters
+    ----------
+    data
+        The data to which to add the flags.
+    filt
+        The name under which to store the flags.
+    flags
+        The flags to add.
+    """
     return data.add_flags(filt, flags)
