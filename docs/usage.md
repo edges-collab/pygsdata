@@ -42,6 +42,16 @@ data = GSData.from_file("data.gsh5")
 Notice that here we didn't have to specify the `telescope_name` parameter, because
 the file format contains this information.
 
+By default, each array in a GSH5 file is written with a checksum (HDF5's Fletcher32
+filter), which HDF5 verifies every time the data is read. Reading a corrupted file
+raises a `pygsdata.readers.GSH5ChecksumError` naming the damaged datasets, instead of
+silently returning bad data. Checksums add a little time to writing and reading; pass
+`checksum=False` to `write_gsh5` to skip them. Files written without checksums
+(including all files written by pygsdata before this feature) can still be read, but
+are not verified. To add checksums to an existing file, read and re-write it with
+`GSData.from_file("old.gsh5").write_gsh5("new.gsh5")`. Only do this with a file you
+trust, since any corruption already present will be preserved with a valid checksum.
+
 ## Updating the Object
 
 As already stated, the GSData object is to be considered immutable. This means that you

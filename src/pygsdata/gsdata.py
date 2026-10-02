@@ -30,7 +30,7 @@ from .attrs import cmp_qtable, lstfield, npfield, timefield
 from .gsflag import GSFlag
 from .history import History, Stamp
 from .telescope import Telescope, _pol_converter
-from .utils import time_concat
+from .utils import time_concat, write_h5_dataset
 
 logger = logging.getLogger(__name__)
 
@@ -392,8 +392,23 @@ class GSData:
 
         return concat(datas, concat_axis)
 
-    def write_gsh5(self, filename: str | Path, group: str = "/") -> Self:
-        """Write the data in the GSData object to a GSH5 file."""
+    def write_gsh5(
+        self, filename: str | Path, group: str = "/", checksum: bool = True
+    ) -> Self:
+        """Write the data in the GSData object to a GSH5 file.
+
+        Parameters
+        ----------
+        filename
+            The file to write to. If it exists, the data is added as a new group.
+        group
+            The group in the file to write the data to.
+        checksum
+            Whether to store a Fletcher32 checksum with each array dataset. HDF5
+            verifies the checksum whenever the data is read, so corrupted files raise
+            an error instead of being read silently. This costs a little extra time
+            to write and read.
+        """
         filename = Path(filename)
         if filename.exists():
             with h5py.File(filename, "r") as fl:
@@ -405,6 +420,9 @@ class GSData:
         else:
             mode = "w"
 
+        def _write(grp, name, value):
+            return write_h5_dataset(grp, name, value, checksum=checksum)
+
         with h5py.File(filename, mode) as fl:
             if group not in fl:
                 fl = fl.create_group(group)
@@ -413,44 +431,48 @@ class GSData:
             # when the file format changes in a backwards-compatible way. The major
             # version is incremented when the file format changes in a way
             # that requires a new reader.
-            fl.attrs["version"] = "2.1"
+            # 2.2: array datasets may carry Fletcher32 checksums.
+            fl.attrs["version"] = "2.2"
 
             meta = fl.create_group("metadata")
             self.telescope.write(meta.create_group("telescope"))
-            meta["freqs"] = self.freqs.to_value("MHz")
+            _write(meta, "freqs", self.freqs.to_value("MHz"))
             meta["freqs"].attrs["unit"] = "MHz"
-            meta["effective_integration_time"] = (
-                self._effective_integration_time.to_value("s")
+            _write(
+                meta,
+                "effective_integration_time",
+                self._effective_integration_time.to_value("s"),
             )
 
-            meta["times"] = self.times.jd
-            meta["time_ranges"] = self.time_ranges.jd
-            meta["lsts"] = self.lsts.hour
-            meta["lst_ranges"] = self.lst_ranges.hour
+            _write(meta, "times", self.times.jd)
+            _write(meta, "time_ranges", self.time_ranges.jd)
+            _write(meta, "lsts", self.lsts.hour)
+            _write(meta, "lst_ranges", self.lst_ranges.hour)
             meta.attrs["data_unit"] = self.data_unit
             meta["loads"] = self.loads
             meta.attrs["history"] = repr(self.history)
             meta.attrs["name"] = self.name
 
             dgrp = fl.create_group("data")
-            dgrp["data"] = self.data
-            dgrp["nsamples"] = self.nsamples
+            _write(dgrp, "data", self.data)
+            _write(dgrp, "nsamples", self.nsamples)
 
             flg_grp = dgrp.create_group("flags")
             if self.flags:
                 flg_grp.attrs["names"] = tuple(self.flags.keys())
+                hickle_kw = {"fletcher32": True} if checksum else {}
                 for name, flag in self.flags.items():
-                    hickle.dump(flag, flg_grp.create_group(name))
+                    hickle.dump(flag, flg_grp.create_group(name), **hickle_kw)
 
             # Data model
             if self.residuals is not None:
-                dgrp["residuals"] = self.residuals
+                _write(dgrp, "residuals", self.residuals)
 
             # Now aux measurements
             aux_grp = fl.create_group("auxiliary_measurements")
             if self.auxiliary_measurements is not None:
                 for name, meas in self.auxiliary_measurements.items():
-                    aux_grp[name] = meas
+                    _write(aux_grp, name, meas)
 
         return self.update(filename=filename)
 
