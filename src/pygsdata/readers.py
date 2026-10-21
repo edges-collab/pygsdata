@@ -189,11 +189,13 @@ class _GSH5Readers:
 
         history = History.from_repr(meta.attrs["history"])
 
-        residuals = (
-            dgrp["residuals"][load_mask][:, :, time_mask][..., freq_mask]
-            if "residuals" in dgrp
-            else None
-        )
+        # GSH5 >= 2.3 stores the model. Older files store only the residuals, from
+        # which the model is recovered (except where the data are NaN).
+        model_kw = {}
+        for name in ("model", "residuals"):
+            if name in dgrp:
+                model_kw[name] = dgrp[name][load_mask][:, :, time_mask][..., freq_mask]
+                break
 
         return GSData(
             data=data,
@@ -208,7 +210,7 @@ class _GSH5Readers:
             flags=flags,
             history=history,
             telescope=telescope,
-            residuals=residuals,
+            **model_kw,
             name=objname,
             effective_integration_time=intg_time,
             **extra_kw,

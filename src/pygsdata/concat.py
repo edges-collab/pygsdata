@@ -47,10 +47,10 @@ def concat(
             )
             flags[k] = flg
 
-    if data[0].residuals is not None:
-        residuals = np.concatenate([d.residuals for d in data], axis=axnum)
+    if data[0].model is not None:
+        model = np.concatenate([d.model for d in data], axis=axnum)
     else:
-        residuals = None
+        model = None
 
     kw = {}
     if axis == "time":
@@ -84,6 +84,6 @@ def concat(
         data=data_array,
         nsamples=nsamples,
         flags=flags,
-        residuals=residuals,
+        model=model,
         **kw,
     )
