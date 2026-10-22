@@ -35,6 +35,14 @@ from .utils import time_concat, write_h5_dataset
 logger = logging.getLogger(__name__)
 
 
+def _model_from_residuals(data: np.ndarray, residuals) -> np.ndarray:
+    """Get the model from the data and the residuals to it."""
+    residuals = np.asarray(residuals, dtype=float)
+    if residuals.shape != np.shape(data):
+        raise ValueError("residuals must have the same shape as data")
+    return data - residuals
+
+
 @define(slots=False)
 class GSData:
     """A generic container for Global-Signal data.
@@ -82,9 +90,15 @@ class GSData:
         step.
     telescope_name
         The name of the telescope.
+    model
+        An optional array of the same shape as data that holds a model of the data
+        (e.g. a fit to it). The residuals, ``data - model``, are available as the
+        ``residuals`` attribute. The model is stored in its own right, so it is kept
+        where the data are NaN (e.g. flagged channels with no data).
     residuals
-        An optional array of the same shape as data that holds the residuals of a model
-        fit to the data.
+        Instead of ``model``, the residuals of the data to a model may be given. They
+        are converted to ``model = data - residuals`` (which is NaN where the data are
+        NaN). Only one of ``model`` and ``residuals`` may be given.
     auxiliary_measurements
         A dictionary mapping measurement names to arrays. Each array must have its
         leading axis be the same length as the time array.
@@ -111,8 +125,11 @@ class GSData:
     history: History = field(
         factory=History, validator=vld.instance_of(History), eq=False
     )
-    residuals: np.ndarray | None = npfield(
-        default=None, possible_ndims=(4,), dtype=float
+    model: np.ndarray | None = npfield(default=None, possible_ndims=(4,), dtype=float)
+    # Residuals are only an input (converted to the model on initialization); the
+    # residuals attribute is derived from the data and model.
+    _residuals_input: np.ndarray | None = field(
+        default=None, alias="residuals", eq=False, repr=False
     )
 
     data_unit: Literal["power", "temperature", "uncalibrated", "uncalibrated_temp"] = (
@@ -155,10 +172,18 @@ class GSData:
                 # tests/test_gsdata.py::test_bad_gsdata_init.
                 raise ValueError("flags keys must be strings")  # noqa: TRY004
 
-    @residuals.validator
-    def _residuals_validator(self, attribute, value):
+    @model.validator
+    def _model_validator(self, attribute, value):
         if value is not None and value.shape != self.data.shape:
-            raise ValueError("residuals must have the same shape as data")
+            raise ValueError("model must have the same shape as data")
+
+    def __attrs_post_init__(self):
+        """Convert input residuals to the model."""
+        if self._residuals_input is not None:
+            if self.model is not None:
+                raise ValueError("Only one of model and residuals may be given")
+            self.model = _model_from_residuals(self.data, self._residuals_input)
+            self._residuals_input = None
 
     @freqs.validator
     def _freqs_validator(self, attribute, value):
@@ -294,12 +319,12 @@ class GSData:
         return self.data.shape[1]
 
     @property
-    def model(self) -> np.ndarray | None:
-        """The model of the data."""
-        if self.residuals is None:
+    def residuals(self) -> np.ndarray | None:
+        """The residuals of the data to the model (``data - model``)."""
+        if self.model is None:
             return None
 
-        return self.data - self.residuals
+        return self.data - self.model
 
     @lsts.default
     def _lsts_default(self) -> Longitude:
@@ -432,7 +457,9 @@ class GSData:
             # version is incremented when the file format changes in a way
             # that requires a new reader.
             # 2.2: array datasets may carry Fletcher32 checksums.
-            fl.attrs["version"] = "2.2"
+            # 2.3: the model is stored as data/model (data/residuals is still written,
+            #      for older readers).
+            fl.attrs["version"] = "2.3"
 
             meta = fl.create_group("metadata")
             self.telescope.write(meta.create_group("telescope"))
@@ -465,7 +492,8 @@ class GSData:
                     hickle.dump(flag, flg_grp.create_group(name), **hickle_kw)
 
             # Data model
-            if self.residuals is not None:
+            if self.model is not None:
+                _write(dgrp, "model", self.model)
                 _write(dgrp, "residuals", self.residuals)
 
             # Now aux measurements
@@ -477,7 +505,22 @@ class GSData:
         return self.update(filename=filename)
 
     def update(self, **kwargs):
-        """Return a new GSData object with updated attributes."""
+        """Return a new GSData object with updated attributes.
+
+        Any attribute may be given. If ``data`` is given without ``model`` (or
+        ``residuals``), the model is kept and the residuals follow the new data.
+        If ``residuals`` is given, it is converted to ``model = data - residuals``,
+        using the new data if that is also given.
+        """
+        if "residuals" in kwargs:
+            residuals = kwargs.pop("residuals")
+            if "model" in kwargs:
+                raise ValueError("Only one of model and residuals may be given")
+            kwargs["model"] = (
+                None
+                if residuals is None
+                else _model_from_residuals(kwargs.get("data", self.data), residuals)
+            )
         # If the user passes a single dictionary as history, append it.
         # Otherwise raise an error, unless it's not passed at all.
         history = kwargs.pop("history", None)

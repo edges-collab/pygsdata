@@ -20,7 +20,8 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
-        python-version: [3.11, "3.12", "3.13"]
+        # 3.15: h5py has no wheels yet (and the runners have no HDF5 to build it).
+        python-version: ["3.12", "3.13", "3.14"]
     steps:
       - uses: actions/checkout@master
         with:
@@ -51,7 +52,7 @@ jobs:
 
   downstream:
     env:
-      PYTHON: 3.11
+      PYTHON: "3.13"
       OS: ubuntu-latest
     name: Downstream
     runs-on: ubuntu-latest

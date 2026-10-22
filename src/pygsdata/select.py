@@ -81,6 +81,7 @@ def select_freqs(
         freqs=data.freqs[mask],
         nsamples=data.nsamples[..., mask],
         flags={k: v.select(idx=mask, axis="freq") for k, v in data.flags.items()},
+        model=data.model[..., mask] if data.model is not None else None,
     )
 
 
@@ -97,7 +98,7 @@ def _mask_times(data: GSData, mask: np.ndarray) -> GSData:
         else None,
         nsamples=data.nsamples[:, :, mask],
         flags={k: v.select(idx=mask, axis="time") for k, v in data.flags.items()},
-        residuals=data.residuals[:, :, mask] if data.residuals is not None else None,
+        model=data.model[:, :, mask] if data.model is not None else None,
         effective_integration_time=data.effective_integration_time[:, :, mask],
         lsts=data.lsts[mask],
         lst_ranges=data.lst_ranges[mask],
@@ -271,6 +272,7 @@ def select_loads(
         lsts=data.lsts[:, mask],
         lst_ranges=data.lst_ranges[:, mask],
         effective_integration_time=data.effective_integration_time[mask],
+        model=data.model[mask] if data.model is not None else None,
     )
 
 
