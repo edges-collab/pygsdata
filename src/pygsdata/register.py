@@ -17,6 +17,18 @@ GSDATA_PROCESSORS = {}
 RegKind = Literal["gather", "calibrate", "filter", "reduce", "supplement"]
 
 
+def _call_arguments(
+    sig: inspect.Signature, first_param: str, data, args: tuple, kw: dict
+) -> tuple[tuple, dict]:
+    """Get the arguments with which to call a function on the data.
+
+    The data is passed by name if it is a keyword-only argument of the function.
+    """
+    if sig.parameters[first_param].kind is inspect.Parameter.KEYWORD_ONLY:
+        return args, {first_param: data, **kw}
+    return (data, *args), kw
+
+
 def _register(func: callable, kind: RegKind) -> callable:
     sig = inspect.signature(func)
     first_param = next(iter(sig.parameters.keys()))
@@ -41,12 +53,13 @@ def _register(func: callable, kind: RegKind) -> callable:
 
     @functools.wraps(func)
     def wrapper(data: GSData, *args, message: str = "", **kw) -> GSData | list[GSData]:
-        newdata = func(data, *args, **kw)
+        call_args, call_kw = _call_arguments(sig, first_param, data, args, kw)
+        newdata = func(*call_args, **call_kw)
 
         # Record every parameter the function actually used, including positional
         # arguments and defaults, so the history is reproducible even if defaults
         # change in the future.
-        bound = sig.bind(data, *args, **kw)
+        bound = sig.bind(*call_args, **call_kw)
         bound.apply_defaults()
         parameters = {}
         for name, value in list(bound.arguments.items())[1:]:

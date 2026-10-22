@@ -1,7 +1,9 @@
 """Test the register module."""
 
+import functools
 from importlib.metadata import version
 
+import numpy as np
 import pytest
 
 from pygsdata import gsregister
@@ -97,3 +99,33 @@ def test_new_fields_survive_gsh5_roundtrip(simple_gsdata, tmp_path):
     assert stamp.qualname == "test_register.documented_gsfunc"
     assert stamp.description == "Scale and offset the data."
     assert stamp.parameters == {"scale": 2.0, "offset": 1.0}
+
+
+@gsregister("calibrate")
+def kwonly_gsfunc(*, data: GSData, scale: float = 1.0) -> GSData:
+    """Scale the data, which is a keyword-only argument."""
+    return data.update(data=data.data * scale)
+
+
+def _flag_wrapper(func):
+    """Wrap a function with keyword-only data so it can be called positionally."""
+
+    @functools.wraps(func)
+    def wrapper(data, **kw):
+        return func(data=data, **kw)
+
+    return wrapper
+
+
+@gsregister("calibrate")
+@_flag_wrapper
+def wrapped_kwonly_gsfunc(*, data: GSData, scale: float = 1.0) -> GSData:
+    """Scale the data, which is a keyword-only argument of the wrapped function."""
+    return data.update(data=data.data * scale)
+
+
+@pytest.mark.parametrize("fnc", [kwonly_gsfunc, wrapped_kwonly_gsfunc])
+def test_keyword_only_data(simple_gsdata, fnc):
+    for new in (fnc(simple_gsdata, scale=2.0), fnc(data=simple_gsdata, scale=2.0)):
+        np.testing.assert_array_equal(new.data, 2 * simple_gsdata.data)
+        assert new.history[-1].parameters == {"scale": 2.0}
