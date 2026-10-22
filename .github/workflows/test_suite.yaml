@@ -20,7 +20,8 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
-        python-version: ["3.12", "3.13", "3.14", "3.15"]
+        # 3.15: h5py has no wheels yet (and the runners have no HDF5 to build it).
+        python-version: ["3.12", "3.13", "3.14"]
     steps:
       - uses: actions/checkout@master
         with:
@@ -28,7 +29,6 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python-version }}
-          allow-prereleases: true
       - name: set PY
         run: echo "PY=$(python -c 'import hashlib, sys;print(hashlib.sha256(sys.version.encode()+sys.executable.encode()).hexdigest())')" >> $GITHUB_ENV
       - name: Setup Environment
